@@ -1,0 +1,210 @@
+{
+  "started_at": "2026-09-29T18:23:09.919035+00:00",
+  "parcels": {
+    "rows": 236560,
+    "active": 227957,
+    "retired": 8603,
+    "dup_blklot": 0,
+    "dup_blocklot": 0,
+    "distinct_blocks": 5420
+  },
+  "eas": {
+    "rows": 388619,
+    "tiers": {
+      "verified_parcel_key": 267348,
+      "verified_block_lot": 0,
+      "unmatched_no_parcel": 120242,
+      "unmatched_orphan": 1029
+    },
+    "dup_eas_baseid": 164354,
+    "key_path_agree": 267347,
+    "key_path_disagree": 1,
+    "orphan_examples": [
+      {
+        "eas_fullid": "280699-716725-553463",
+        "parcel_number": "0253T052C"
+      },
+      {
+        "eas_fullid": "280699-721743-559137",
+        "parcel_number": "0253T421N"
+      },
+      {
+        "eas_fullid": "280699-488666-309588",
+        "parcel_number": "0253T082S"
+      },
+      {
+        "eas_fullid": "280699-488670-309592",
+        "parcel_number": "0253T083N"
+      },
+      {
+        "eas_fullid": "280699-489062-309984",
+        "parcel_number": "0253T290N"
+      },
+      {
+        "eas_fullid": "506504-872575-601189",
+        "parcel_number": "0000000"
+      },
+      {
+        "eas_fullid": "280699-488819-309741",
+        "parcel_number": "0253T126C"
+      },
+      {
+        "eas_fullid": "280699-488626-309548",
+        "parcel_number": "0253T073S"
+      },
+      {
+        "eas_fullid": "280699-488841-309763",
+        "parcel_number": "0253T132S"
+      },
+      {
+        "eas_fullid": "280699-488500-309422",
+        "parcel_number": "0253T046N"
+      }
+    ],
+    "no_parcel_examples": [
+      {
+        "eas_fullid": "368013-751133-0",
+        "address": "1841 19TH ST #3"
+      },
+      {
+        "eas_fullid": "280821-771728-0",
+        "address": "220 BUSH ST #1611"
+      },
+      {
+        "eas_fullid": "287518-773623-0",
+        "address": "1865 BUSH ST #301"
+      },
+      {
+        "eas_fullid": "318273-759483-0",
+        "address": "1355 47TH AVE #1"
+      },
+      {
+        "eas_fullid": "336769-861838-0",
+        "address": "3127 TARAVAL ST #1"
+      },
+      {
+        "eas_fullid": "297087-856060-0",
+        "address": "659 SCOTT ST #12"
+      },
+      {
+        "eas_fullid": "288925-807522-0",
+        "address": "1161 HAYES ST #5"
+      },
+      {
+        "eas_fullid": "362936-753465-0",
+        "address": "3488 22ND ST #3"
+      },
+      {
+        "eas_fullid": "282470-767931-0",
+        "address": "1801 BEACH ST #304"
+      },
+      {
+        "eas_fullid": "360668-848047-0",
+        "address": "490 SANCHEZ ST #1"
+      }
+    ]
+  },
+  "addrmap": {
+    "rows": 221130,
+    "parcel_agree": 202213,
+    "parcel_disagree": 18917,
+    "eas_baseid_missing": 0,
+    "disagree_examples": [
+      {
+        "eas_baseid": "449432",
+        "map_parcel": "0792T043E",
+        "eas_parcel": "0792T020E"
+      },
+      {
+        "eas_baseid": "274596",
+        "map_parcel": "0306T789A",
+        "eas_parcel": "0306T068C"
+      },
+      {
+        "eas_baseid": "288385",
+        "map_parcel": "0792T501A",
+        "eas_parcel": "0792T118A"
+      },
+      {
+        "eas_baseid": "274596",
+        "map_parcel": "0306T477A",
+        "eas_parcel": "0306T068C"
+      },
+      {
+        "eas_baseid": "449432",
+        "map_parcel": "0792T572A",
+        "eas_parcel": "0792T020E"
+      },
+      {
+        "eas_baseid": "449432",
+        "map_parcel": "0792T194O",
+        "eas_parcel": "0792T020E"
+      },
+      {
+        "eas_baseid": "288385",
+        "map_parcel": "0792T041O",
+        "eas_parcel": "0792T118A"
+      },
+      {
+        "eas_baseid": "280750",
+        "map_parcel": "0256T445M",
+        "eas_parcel": "0256T404M"
+      },
+      {
+        "eas_baseid": "275907",
+        "map_parcel": "0026T240A",
+        "eas_parcel": "0026T129A"
+      },
+      {
+        "eas_baseid": "274596",
+        "map_parcel": "0306T170C",
+        "eas_parcel": "0306T068C"
+      }
+    ]
+  },
+  "rentboard": {
+    "rows": 551358,
+    "distinct_blocks": 4288,
+    "blocks_also_in_parcels": 4288,
+    "parcel_blocks_total": 5420,
+    "note": "block-level filing evidence only; never parcel attribution"
+  },
+  "negative_controls": {
+    "N1_corrupt_parcel_key_links": 0,
+    "N2_corrupt_block_lot_links": 0,
+    "N3_verified_without_parcel_hit": 0,
+    "N4_verified_blklot_unresolved": 0,
+    "passed": true
+  },
+  "finished_at": "2026-09-29T18:23:31.677271+00:00",
+  "elapsed_s": 21.8,
+  "inputs": {
+    "parcels": {
+      "path": "/home/hatch/workspace/goals/sf-property-verification-ledger/data/wave2/8jwb-2stv.snapshot.jsonl",
+      "sha256": "4598e2c053c2d162bde24dc7fd802fdf6560a506d2dd4bb979b23e826dab3148"
+    },
+    "eas": {
+      "path": "/home/hatch/workspace/goals/sf-property-verification-ledger/data/wave2/ramy-di5m.snapshot.jsonl",
+      "sha256": "f91bdf9d4b3057a0258a348b95a863c6680f4dac51a9869e3574b5a457017cbb"
+    },
+    "addrmap": {
+      "path": "/home/hatch/workspace/goals/sf-property-verification-ledger/data/wave2/5mjj-njit.snapshot.jsonl",
+      "sha256": "dc431f525352e3feea330cbd539f300794980eed6e1071a92ab31527a94b6c79"
+    },
+    "rentboard": {
+      "path": "/home/hatch/workspace/goals/sf-property-verification-ledger/data/wave1/gdc7-dmcn.snapshot.jsonl",
+      "sha256": "703dc619c0269667dcd8606b4c75fb56f441a90d503de5cc22166b20277fe232"
+    }
+  },
+  "code_sha256": "d40ae3aeaf759e40e34abf1e35fe174f4bd14e2ca7705c8a313f72b64f4530b1",
+  "outputs": {
+    "linkage": {
+      "path": "/home/hatch/workspace/goals/sf-property-verification-ledger/data/wave3/linkage.jsonl",
+      "sha256": "6d6d71dd0ca9566e7872fb44b0ee46436b64c94e060e000c932ae9171db7fadc"
+    },
+    "block_evidence": {
+      "path": "/home/hatch/workspace/goals/sf-property-verification-ledger/data/wave3/block_evidence.jsonl",
+      "sha256": "df154a93da8a01f2f4e4bf9f2c32a61251a8e023ca4e07901e2ecc29060391dd"
+    }
+  }
+}

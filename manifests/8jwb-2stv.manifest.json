@@ -1,0 +1,255 @@
+{
+  "dataset_id": "8jwb-2stv",
+  "source_host": "https://data.sf.gov",
+  "source_url": "https://data.sf.gov/resource/8jwb-2stv.json",
+  "retrieved_at": "2026-09-29T15:07:52.454990+00:00",
+  "expected_rows": 236560,
+  "page_size": 5000,
+  "order": ":id",
+  "pages": [
+    {
+      "offset": 0,
+      "rows": 5000,
+      "sha256": "6c6491ddb03a0835076d0914c37f5694808365a18c7c4dccaa1f175aeb370904"
+    },
+    {
+      "offset": 5000,
+      "rows": 5000,
+      "sha256": "94c1e6c0a6b1674009a7c511a614d7aef264934717f3b56ca040a6ff1437aa08"
+    },
+    {
+      "offset": 10000,
+      "rows": 5000,
+      "sha256": "6a49c0929a3542ac7eea7bf5e424d7090e0e58df9c537829c27bf135922ac343"
+    },
+    {
+      "offset": 15000,
+      "rows": 5000,
+      "sha256": "5eac539c2886f437661c121e76472a2510ad262badf9e5a6788e8a719461cf99"
+    },
+    {
+      "offset": 20000,
+      "rows": 5000,
+      "sha256": "a9821a3978c2dd1ac5bf75ae922e9a9ae7c12eed2bd1887e4bc97246cffb9573"
+    },
+    {
+      "offset": 25000,
+      "rows": 5000,
+      "sha256": "e699ff88bff1c29069fc1f84d072ece145a93869d8ee5024fcc1aa4b45ed6f4b"
+    },
+    {
+      "offset": 30000,
+      "rows": 5000,
+      "sha256": "f61e485f6caa1657cacd7573ef10d0ce094765070620ae2f8acd5430335b4c53"
+    },
+    {
+      "offset": 35000,
+      "rows": 5000,
+      "sha256": "382e3b4a592c453cb5bdf2b507507d10d951c3a255c049433a37f57dc802be7a"
+    },
+    {
+      "offset": 40000,
+      "rows": 5000,
+      "sha256": "5b703b41a450dc1c35cdacc9b5956432cb7397095de24f9c8d5cbc7dc0d70b14"
+    },
+    {
+      "offset": 45000,
+      "rows": 5000,
+      "sha256": "3d5c86059fcde275350a8c8d2923ba7b33a67caa40e933fecc5bf1c4b2b5b497"
+    },
+    {
+      "offset": 50000,
+      "rows": 5000,
+      "sha256": "021934c68c21f791569615e93a0811733dbe4069c82dac1d619410e6cc65f349"
+    },
+    {
+      "offset": 55000,
+      "rows": 5000,
+      "sha256": "bd2fc93759bfe5235170263272776baf6b0fd9b773daa684b96c807ba89a3bea"
+    },
+    {
+      "offset": 60000,
+      "rows": 5000,
+      "sha256": "e325d7f927f2c6c6942b03d458ef256b5f418d8eb7f24d2f1dcad1043f82508e"
+    },
+    {
+      "offset": 65000,
+      "rows": 5000,
+      "sha256": "e4f72afe42576d5fa88b47652a657d7b65d012aecb27540a4e372f16bda8817f"
+    },
+    {
+      "offset": 70000,
+      "rows": 5000,
+      "sha256": "1e5c98b331009db5ae8145a216e844caea418ee9eb5e516ddf59045f49af394e"
+    },
+    {
+      "offset": 75000,
+      "rows": 5000,
+      "sha256": "36528ac08a756ee676723a4bedf0b173aacd137c8e670020edca42833b88cb9d"
+    },
+    {
+      "offset": 80000,
+      "rows": 5000,
+      "sha256": "0f57c18593c1033e3149d87f1dd4bb23b817113e4d052958e634d3e2171aaf82"
+    },
+    {
+      "offset": 85000,
+      "rows": 5000,
+      "sha256": "d3f00f3bfffc87b56a71856017d7d631b295c21f188ca9ca01920722d0443c94"
+    },
+    {
+      "offset": 90000,
+      "rows": 5000,
+      "sha256": "82101f1763eeee368c54f394d25fe3b3166c455b75c079811ca0a4db1d33a743"
+    },
+    {
+      "offset": 95000,
+      "rows": 5000,
+      "sha256": "d4d383ab7610fcc173ac85e9ebb53531321a46cb113a02c3a3bf0df75420fa80"
+    },
+    {
+      "offset": 100000,
+      "rows": 5000,
+      "sha256": "2f5ca3b9485f8c88c9c87fae1c66f2033a91dd8ca52a350d51a5f73965b92799"
+    },
+    {
+      "offset": 105000,
+      "rows": 5000,
+      "sha256": "5578132623e45a94ae3344e988216485c5f8b3158b55bb714ea58a9767a588c0"
+    },
+    {
+      "offset": 110000,
+      "rows": 5000,
+      "sha256": "b380fb775750227a601cc0b2e8d8e36a644f4cb6d9e15c026046aaf15fdf67e1"
+    },
+    {
+      "offset": 115000,
+      "rows": 5000,
+      "sha256": "179f41a82af63e9715f713a4dd21161e3ca55a86eac1ce297f5a144ae65b2bcc"
+    },
+    {
+      "offset": 120000,
+      "rows": 5000,
+      "sha256": "5a8156e4e40a52aa53a858241b5a22b3942836a96f09e64e99e4028a73be1472"
+    },
+    {
+      "offset": 125000,
+      "rows": 5000,
+      "sha256": "b2d73847e5cd914742f883311377a0dcad41e84ea7a81250c18138dd51401038"
+    },
+    {
+      "offset": 130000,
+      "rows": 5000,
+      "sha256": "ba26ef03ac6b3e635c59c49196fc116b62edbe5d92fb1d08f65c3a9312a0f81d"
+    },
+    {
+      "offset": 135000,
+      "rows": 5000,
+      "sha256": "164bdd0f601176150619ee0298eb95942bac0983a8d0ec132a7b98291c9d7c9e"
+    },
+    {
+      "offset": 140000,
+      "rows": 5000,
+      "sha256": "d434d0e2fc2be287a8355027352433855c7a56bd9eb27ecb1372aa8967e403b4"
+    },
+    {
+      "offset": 145000,
+      "rows": 5000,
+      "sha256": "686ce7621433d2c2c07a699d744e44d3bc449f9bb6cba394c17a367d571a02ba"
+    },
+    {
+      "offset": 150000,
+      "rows": 5000,
+      "sha256": "9d330414c8b33b2dee46e8fd8e2f2b18f89ef45d553044bc6962add859349b03"
+    },
+    {
+      "offset": 155000,
+      "rows": 5000,
+      "sha256": "d7de681377ef8b8ad3aefd070136636acb8824bd6de460d9219e7cd5f23821ea"
+    },
+    {
+      "offset": 160000,
+      "rows": 5000,
+      "sha256": "78d12d1fe5d3872f09afb924138b8836bab971521fd90d9882089b4636716a47"
+    },
+    {
+      "offset": 165000,
+      "rows": 5000,
+      "sha256": "a99ed1f4f55f6f262032d83b84ab8e4375d4c80a57fbdab5bcca708a5541d8de"
+    },
+    {
+      "offset": 170000,
+      "rows": 5000,
+      "sha256": "d77527bdc3b24fe2e274a53512c2b4eb4397bbff3a91eba49d0acd68bdd417e8"
+    },
+    {
+      "offset": 175000,
+      "rows": 5000,
+      "sha256": "c0671e78bc86a89e80456ca3f9ee02373ec6d6f9e5d9bb8c2e0f85e23c5c1aa3"
+    },
+    {
+      "offset": 180000,
+      "rows": 5000,
+      "sha256": "2146e8a5b2b159c43f46f5b3ad4a260fa15895215ede7ab862112899aed421a4"
+    },
+    {
+      "offset": 185000,
+      "rows": 5000,
+      "sha256": "8f2360b12527d91d29566a49542c406014aeba9c81657b60877ab7bba1b7fd95"
+    },
+    {
+      "offset": 190000,
+      "rows": 5000,
+      "sha256": "80d2e2ca0392d4a755cb3c7f3210d43ab30e70bee9b9efb341ad371dff698165"
+    },
+    {
+      "offset": 195000,
+      "rows": 5000,
+      "sha256": "23cc4283a1981d9e534fb01a072d552c8b6f5a81aaa80f7c6a8e794dbc387cd9"
+    },
+    {
+      "offset": 200000,
+      "rows": 5000,
+      "sha256": "46a00d4846b8afdd88a9f1bbd980679824d3f8b0725d9aca3eb79eb355033c67"
+    },
+    {
+      "offset": 205000,
+      "rows": 5000,
+      "sha256": "c52025371356f38ad2ee3b520e5240074fb18ffb480040d09d7e585eef18dfcf"
+    },
+    {
+      "offset": 210000,
+      "rows": 5000,
+      "sha256": "1bdf67bbfc9b2691239e40c1c3bda055add00c6f9399255c00d508d1ba21b889"
+    },
+    {
+      "offset": 215000,
+      "rows": 5000,
+      "sha256": "816dc20db741af99e98e6c305a273798422b9028ea6f799db0ab67c0a183d2a7"
+    },
+    {
+      "offset": 220000,
+      "rows": 5000,
+      "sha256": "e636d684562956174f5ad5752d989f65743e00c411e23d418548408a0a167489"
+    },
+    {
+      "offset": 225000,
+      "rows": 5000,
+      "sha256": "80d5ac11e6ca77ef553d62a8f347722ad576f4d63f52519a870b6a9933be8b58"
+    },
+    {
+      "offset": 230000,
+      "rows": 5000,
+      "sha256": "65d36e3725b6d77218a1a0af09a2f620d46e80075869a2ffce70ce90bedb3be1"
+    },
+    {
+      "offset": 235000,
+      "rows": 1560,
+      "sha256": "1efc67db4d27686d339030fe34a473ac1034cafc054a9ffc82cd8e136ec748d1"
+    }
+  ],
+  "completed_at": "2026-09-29T15:28:51.641482+00:00",
+  "total_pages": 48,
+  "total_rows_written": 236560,
+  "file_sha256": "4598e2c053c2d162bde24dc7fd802fdf6560a506d2dd4bb979b23e826dab3148"
+}

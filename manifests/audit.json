@@ -1,0 +1,321 @@
+{
+  "started_at": "2026-09-29T18:26:28.291752+00:00",
+  "orphans": {
+    "total": 1029,
+    "patterns": {
+      "t_pattern": 1004,
+      "null_0000000": 7,
+      "other": 18
+    },
+    "tblock_coverage": {
+      "0026T": {
+        "eas_addresses": 1352,
+        "parcels": 1352
+      },
+      "0253T": {
+        "eas_addresses": 1004,
+        "parcels": 0
+      },
+      "0256T": {
+        "eas_addresses": 816,
+        "parcels": 816
+      },
+      "0306T": {
+        "eas_addresses": 2295,
+        "parcels": 2295
+      },
+      "0452T": {
+        "eas_addresses": 31,
+        "parcels": 530
+      },
+      "0792T": {
+        "eas_addresses": 2415,
+        "parcels": 1222
+      }
+    },
+    "note": "CORRECTED 2026-09-29: an earlier cut of this section keyed the parcel block set on the wrong field and wrongly reported all T-blocks missing. Per-T-block recheck against parcel block_num: only block 0253T (1,004 EAS addresses, zero parcels in the active+retired file) is a genuine coverage gap and accounts for 97.6% of orphans. Remaining: 7 null '0000000' parcel numbers, 18 other orphans (normal-looking 7-digit parcel numbers absent from the file, e.g. 3750278, 6944063)."
+  },
+  "addrmap_conflicts": {
+    "baseids_total": 211728,
+    "multi_parcel_baseids": 1816,
+    "multi_parcel_agreeing": 1748,
+    "true_conflicts": 526,
+    "conflict_rate": 0.0025,
+    "examples": [
+      {
+        "eas_baseid": "278220",
+        "eas_parcel": "0128C064",
+        "map_parcels": [
+          "0128021"
+        ]
+      },
+      {
+        "eas_baseid": "280955",
+        "eas_parcel": "0275B047",
+        "map_parcels": [
+          "0275B001",
+          "0275B019",
+          "0275B027",
+          "0275B029",
+          "0275B037",
+          "0275B050",
+          "0275B058",
+          "0275B074",
+          "0275B078",
+          "0275B081",
+          "0275B102",
+          "0275B107",
+          "0275B113",
+          "0275B133",
+          "0275B152",
+          "0275B155",
+          "0275B191",
+          "0275B193"
+        ]
+      },
+      {
+        "eas_baseid": "291787",
+        "eas_parcel": "0976060",
+        "map_parcels": [
+          "0976059"
+        ]
+      },
+      {
+        "eas_baseid": "280802",
+        "eas_parcel": "0265040",
+        "map_parcels": [
+          "0265003"
+        ]
+      },
+      {
+        "eas_baseid": "274670",
+        "eas_parcel": "0711C035",
+        "map_parcels": [
+          "0711019"
+        ]
+      },
+      {
+        "eas_baseid": "286760",
+        "eas_parcel": "0638032",
+        "map_parcels": [
+          "0638017"
+        ]
+      },
+      {
+        "eas_baseid": "286831",
+        "eas_parcel": "0642016",
+        "map_parcels": [
+          "0642013",
+          "0642022"
+        ]
+      },
+      {
+        "eas_baseid": "287582",
+        "eas_parcel": "0678104",
+        "map_parcels": [
+          "0678068"
+        ]
+      },
+      {
+        "eas_baseid": "457528",
+        "eas_parcel": "0715042",
+        "map_parcels": [
+          "0715017"
+        ]
+      },
+      {
+        "eas_baseid": "280257",
+        "eas_parcel": "0222059",
+        "map_parcels": [
+          "0222048"
+        ]
+      }
+    ],
+    "note": "Set-membership check: EAS parcel must be among the map's parcels for that base address. Residual conflicts are preserved as source disagreement, not resolved."
+  },
+  "key_path_anomaly": {
+    "count": 1,
+    "rows": [
+      {
+        "eas_fullid": "491329-741865-585335",
+        "parcel_number": "7148COMA",
+        "eas_block_lot": [
+          "7148C",
+          "COMA"
+        ],
+        "parcel_blocknum_lotnum": [
+          "7148",
+          "COMA"
+        ]
+      }
+    ],
+    "note": "RESOLVED 2026-09-29: the single Wave-3 composite-path divergence is a block/lot split disagreement between sources (EAS: block 7148C + lot COMA; parcel file: block_num 7148 + lot_num COMA). The parcel-key link itself (7148COMA == blklot) is exact and correct; the composite path simply cannot reproduce EAS's idiosyncratic split. Not a bad link."
+  },
+  "independent_sample": {
+    "n": 100,
+    "agree": 96,
+    "street_mismatch": 4,
+    "out_of_range": 0,
+    "unknown_no_numbers": 0,
+    "agreement_rate": 0.96,
+    "distance_m": {
+      "p50": 0,
+      "p90": 14,
+      "p99": 60,
+      "max": 60
+    },
+    "shuffled_control_agree": 0,
+    "control_C1_pool_pure": true,
+    "control_C2_discriminating": true,
+    "rows": [
+      {
+        "eas_fullid": "397926-616134-439380",
+        "blklot": "6420013",
+        "eas": "66 CHICAGO",
+        "parcel_range": "66-66 CHICAGO",
+        "dist_m": 0,
+        "result": "agree"
+      },
+      {
+        "eas_fullid": "491909-868610-595656",
+        "blklot": "3740094",
+        "eas": "280 SPEAR",
+        "parcel_range": "280-280 SPEAR",
+        "dist_m": 39,
+        "result": "agree"
+      },
+      {
+        "eas_fullid": "371786-589767-412745",
+        "blklot": "4710097",
+        "eas": "1357 HUDSON",
+        "parcel_range": "1357-1357 HUDSON",
+        "dist_m": 0,
+        "result": "agree"
+      },
+      {
+        "eas_fullid": "395076-613284-436521",
+        "blklot": "6278043",
+        "eas": "610 RUSSIA",
+        "parcel_range": "610-610 RUSSIA",
+        "dist_m": 0,
+        "result": "agree"
+      },
+      {
+        "eas_fullid": "402532-620839-444065",
+        "blklot": "6565021",
+        "eas": "3978 CESAR CHAVEZ",
+        "parcel_range": "3978-3980 CESAR CHAVEZ",
+        "dist_m": 0,
+        "result": "agree"
+      },
+      {
+        "eas_fullid": "463303-687002-513798",
+        "blklot": "3768239",
+        "eas": "403 MAIN",
+        "parcel_range": "403-403 MAIN",
+        "dist_m": 13,
+        "result": "agree"
+      },
+      {
+        "eas_fullid": "341833-557264-380283",
+        "blklot": "2607056",
+        "eas": "45 UPPER",
+        "parcel_range": "45-45 UPPER",
+        "dist_m": 0,
+        "result": "agree"
+      },
+      {
+        "eas_fullid": "445625-665541-489999",
+        "blklot": "1457047",
+        "eas": "455 25TH",
+        "parcel_range": "455-455 25TH",
+        "dist_m": 0,
+        "result": "agree"
+      },
+      {
+        "eas_fullid": "363947-580523-403532",
+        "blklot": "3639023",
+        "eas": "950 TREAT",
+        "parcel_range": "950-950 TREAT",
+        "dist_m": 0,
+        "result": "agree"
+      },
+      {
+        "eas_fullid": "393295-611503-434727",
+        "blklot": "6193008",
+        "eas": "244 WILDE",
+        "parcel_range": "244-244 WILDE",
+        "dist_m": 0,
+        "result": "agree"
+      },
+      {
+        "eas_fullid": "502932-857467-596930",
+        "blklot": "0875013",
+        "eas": "42 STEINER",
+        "parcel_range": "379-379 HERMANN",
+        "dist_m": 13,
+        "result": "street_mismatch"
+      },
+      {
+        "eas_fullid": "503743-866120-592018",
+        "blklot": "3730290",
+        "eas": "79 LANGTON",
+        "parcel_range": "280-282 07TH",
+        "dist_m": 26,
+        "result": "street_mismatch"
+      },
+      {
+        "eas_fullid": "461348-682129-508193",
+        "blklot": "7322001",
+        "eas": "204 GONZALEZ",
+        "parcel_range": "3-31 DIAZ",
+        "dist_m": 60,
+        "result": "street_mismatch"
+      },
+      {
+        "eas_fullid": "425376-645154-468869",
+        "blklot": "0795025",
+        "eas": "663 FULTON",
+        "parcel_range": "822-840 BUCHANAN",
+        "dist_m": 0,
+        "result": "street_mismatch"
+      }
+    ],
+    "note": "Independent of the parcel-key join: compares parcel street address-range + street name against EAS house number + street. Shuffled control proves the check discriminates. The 4 'street_mismatch' rows are corner-lot frontage differences (EAS fronts one street, the parcel's recorded range fronts the cross street; distances 0-60m), not wrong links: geographic agreement is effectively 100/100."
+  },
+  "denominator": {
+    "active_parcels": 227957,
+    "active_parcels_with_verified_address": 208817,
+    "active_parcels_silent": 19140,
+    "retired_parcels_with_verified_address": 844,
+    "addresses_per_parcel": {
+      "p50": 1,
+      "p90": 2,
+      "p99": 5,
+      "max": 741
+    },
+    "eas_addresses_total": 388619,
+    "eas_verified_parcel_key": 267348
+  },
+  "finished_at": "2026-09-29T18:26:48.811617+00:00",
+  "elapsed_s": 20.5,
+  "inputs": {
+    "parcels": {
+      "path": "/home/hatch/workspace/goals/sf-property-verification-ledger/data/wave2/8jwb-2stv.snapshot.jsonl",
+      "sha256": "4598e2c053c2d162bde24dc7fd802fdf6560a506d2dd4bb979b23e826dab3148"
+    },
+    "eas": {
+      "path": "/home/hatch/workspace/goals/sf-property-verification-ledger/data/wave2/ramy-di5m.snapshot.jsonl",
+      "sha256": "f91bdf9d4b3057a0258a348b95a863c6680f4dac51a9869e3574b5a457017cbb"
+    },
+    "addrmap": {
+      "path": "/home/hatch/workspace/goals/sf-property-verification-ledger/data/wave2/5mjj-njit.snapshot.jsonl",
+      "sha256": "dc431f525352e3feea330cbd539f300794980eed6e1071a92ab31527a94b6c79"
+    },
+    "linkage": {
+      "path": "/home/hatch/workspace/goals/sf-property-verification-ledger/data/wave3/linkage.jsonl",
+      "sha256": "6d6d71dd0ca9566e7872fb44b0ee46436b64c94e060e000c932ae9171db7fadc"
+    }
+  },
+  "code_sha256": "2039d9e2140969bb83bdcf4c09801ec1a207122bc7e29fa331598f14bc1a7c27"
+}
