@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""sfledger CLI — thin shell over the shared typed service layer (repo/sfledger).
+
+All output is deterministic JSON on stdout. Errors and load progress go to stderr.
+Read-only: never writes to data/.
+"""
+
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+from sfledger import queries  # noqa: E402
+
+
+def emit(obj):
+    json.dump(obj, sys.stdout, indent=2, sort_keys=False)
+    sys.stdout.write("\n")
+
+
+def main(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(prog="sfledger",
+                                 description="SF property verification ledger")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("address", help="look up an SF address")
+    p.add_argument("address", help='free-text address, e.g. "329 FULTON ST"')
+
+    p = sub.add_parser("parcel", help="look up a parcel by block/lot")
+    p.add_argument("blklot", help="blklot like 0189001A or block/lot like 1753/001")
+
+    p = sub.add_parser("rc", help="rent-control filing evidence for address or parcel")
+    p.add_argument("query", help="address or blklot")
+
+    p = sub.add_parser("gaps", help="blocks with zero inventory filings, ranked")
+    p.add_argument("--neighborhood", default=None,
+                   help="filter by analysis neighborhood (substring match)")
+    p.add_argument("--limit", type=int, default=20)
+
+    sub.add_parser("coverage", help="citywide coverage report")
+    sub.add_parser("waves", help="per-wave build status")
+    p = sub.add_parser("explain", help="provenance narrative for address or parcel")
+    p.add_argument("query", help="address or blklot")
+
+    args = ap.parse_args(argv)
+    try:
+        if args.cmd == "address":
+            emit(queries.lookup_address(args.address))
+        elif args.cmd == "parcel":
+            emit(queries.lookup_parcel(args.blklot))
+        elif args.cmd == "rc":
+            emit(queries.rent_control_evidence(args.query))
+        elif args.cmd == "gaps":
+            emit(queries.filing_gap(neighborhood=args.neighborhood,
+                                    limit=args.limit))
+        elif args.cmd == "coverage":
+            emit(queries.coverage_report())
+        elif args.cmd == "waves":
+            emit(queries.wave_status())
+        elif args.cmd == "explain":
+            emit(queries.explain(args.query))
+    except Exception as e:  # noqa: BLE001 — CLI must never traceback on stdout
+        json.dump({"error": type(e).__name__, "message": str(e)}, sys.stdout)
+        sys.stdout.write("\n")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
