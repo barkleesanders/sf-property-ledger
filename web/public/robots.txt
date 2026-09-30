@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /result
+Sitemap: https://sf-property-ledger.barkleesanders.workers.dev/sitemap.xml

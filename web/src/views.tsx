@@ -103,6 +103,9 @@ function Colophon() {
 export function Layout({ title, current, mode, children }: {
   title: string; current: string; mode: Mode; children: Child;
 }) {
+  // Canonical URL for the rendered page. Query-bearing pages (e.g. /result)
+  // canonicalize to their path so crawlers don't index per-query URLs.
+  const canonical = `https://sf-property-ledger.barkleesanders.workers.dev${current}`;
   return (
     <html lang="en">
       <head>
@@ -110,6 +113,20 @@ export function Layout({ title, current, mode, children }: {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="description" content="Every parcel in San Francisco, accounted for: verified addresses, parcels, and Rent Board filing evidence from the city's own records." />
         <meta name="theme-color" content="#09090b" />
+        <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSIjMDkwOTBiIi8+CjxyZWN0IHg9IjYiIHk9IjYiIHdpZHRoPSI1MiIgaGVpZ2h0PSI1MiIgcng9IjEwIiBmaWxsPSJub25lIiBzdHJva2U9IiMxMGI5ODEiIHN0cm9rZS13aWR0aD0iMi41Ii8+Cjx0ZXh0IHg9IjMyIiB5PSI0MSIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsIHNlcmlmIiBmb250LXNpemU9IjI2IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iI2Y0ZjRmNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U0Y8L3RleHQ+CjxyZWN0IHg9IjE0IiB5PSI0OCIgd2lkdGg9IjM2IiBoZWlnaHQ9IjMiIHJ4PSIxLjUiIGZpbGw9IiMxMGI5ODEiLz4KPC9zdmc+Cg==" />
+        <link rel="canonical" href={canonical} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="SF Property Ledger" />
+        <meta property="og:title" content={`${title} · SF Property Ledger`} />
+        <meta property="og:description" content="Every parcel in San Francisco, accounted for: verified addresses, parcels, and Rent Board filing evidence from the city's own records." />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:image" content="https://sf-property-ledger.barkleesanders.workers.dev/og.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${title} · SF Property Ledger`} />
+        <meta name="twitter:description" content="Every parcel in San Francisco, accounted for: verified addresses, parcels, and Rent Board filing evidence from the city's own records." />
+        <meta name="twitter:image" content="https://sf-property-ledger.barkleesanders.workers.dev/og.png" />
         <title>{title} · SF Property Ledger</title>
         <link rel="stylesheet" href="/ledger.css" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -298,7 +315,7 @@ function AddressProfile({ data }: { data: Record<string, any> }) {
       />
       <div class="wrap">
         {(data.tiers_present ?? []).length > 0 && (
-          <p class="fineprint" style="margin-top:1.5rem">
+          <p class="fineprint fineprint--spaced">
             Linkage tiers present: {(data.tiers_present as string[]).map((t) => <> <Stamp tier={t} /></>)}
           </p>
         )}
@@ -387,7 +404,7 @@ function EvidenceSection({ rc }: { rc: Record<string, any>; q: string }) {
   return (
     <div class="wrap">
       <section class="page-section" aria-label="Filing evidence">
-        <div class="detail-head__stamps" style="margin:0 0 0.75rem">
+        <div class="detail-head__stamps detail-head__stamps--flush">
           <Stamp tier="reported" big />
         </div>
         <SectionRule num="03" label="Filing evidence" />
@@ -404,7 +421,7 @@ function EvidenceSection({ rc }: { rc: Record<string, any>; q: string }) {
         </div>
         {Object.keys(occ).length > 0 && (
           <>
-            <h3 class="section-title" style="font-size:1.3rem;margin-top:2rem">Occupancy mix (as filed)</h3>
+            <h3 class="section-title section-title--lg">Occupancy mix (as filed)</h3>
             <div class="tablewrap"><table class="ruled"><tbody>
               {Object.entries(occ).map(([k, v]) => <tr><td>{esc(k)}</td><td class="mono num">{fmt(v)}</td></tr>)}
             </tbody></table></div>
@@ -412,7 +429,7 @@ function EvidenceSection({ rc }: { rc: Record<string, any>; q: string }) {
         )}
         {Object.keys(buckets).length > 0 && (
           <>
-            <h3 class="section-title" style="font-size:1.3rem;margin-top:2rem">Rent buckets (as filed)</h3>
+            <h3 class="section-title section-title--lg">Rent buckets (as filed)</h3>
             <div class="tablewrap"><table class="ruled"><tbody>
               {Object.entries(buckets).map(([k, v]) => <tr><td>{esc(k)}</td><td class="mono num">{fmt(v)}</td></tr>)}
             </tbody></table></div>
@@ -420,7 +437,7 @@ function EvidenceSection({ rc }: { rc: Record<string, any>; q: string }) {
         )}
         {samples.length > 0 && (
           <>
-            <h3 class="section-title" style="font-size:1.3rem;margin-top:2rem">Sample filings (block level)</h3>
+            <h3 class="section-title section-title--lg">Sample filings (block level)</h3>
             <div class="tablewrap"><table class="ruled">
               <thead><tr><th>Block address</th><th>Year</th><th>Units</th><th>Year built</th></tr></thead>
               <tbody>
@@ -455,7 +472,7 @@ function ExplainSection({ expl }: { expl: Record<string, any> }) {
         </ol>
         {caveats.length > 0 && (
           <>
-            <h3 class="section-title" style="font-size:1.3rem;margin-top:1.5rem">Caveats</h3>
+            <h3 class="section-title section-title--md">Caveats</h3>
             <ul class="caveats">
               {caveats.map((c) => <li>{esc(c)}</li>)}
             </ul>

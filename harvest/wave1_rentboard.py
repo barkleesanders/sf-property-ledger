@@ -95,6 +95,11 @@ def main():
         with open(manifest_path) as f:
             manifest = json.load(f)
         print(f"resuming: {len(manifest['pages'])} pages already done", flush=True)
+        # FIX 2026-09-29: refresh the expected count on resume. The live
+        # source can grow between runs (Wave 1: 551,244 -> 551,358 mid-harvest);
+        # the stale value carried in the reloaded manifest would otherwise
+        # never reconcile with the actual row count.
+        manifest["expected_rows"] = expected
 
     done_offsets = {p["offset"] for p in manifest["pages"]}
     limit = 100 if args.probe else PAGE_SIZE

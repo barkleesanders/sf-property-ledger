@@ -3,7 +3,7 @@
   "source_host": "https://data.sf.gov",
   "source_url": "https://data.sf.gov/resource/gdc7-dmcn.json",
   "retrieved_at": "2026-09-29T09:19:03.525535+00:00",
-  "expected_rows": 551244,
+  "expected_rows": 551358,
   "page_size": 5000,
   "pages": [
     {
@@ -562,7 +562,7 @@
       "sha256": "b1fefa98149b26405314406387bfa1caadafa3061970fa4221ebc909916ccfea"
     }
   ],
-  "completed_at": "2026-09-29T15:07:02.822623+00:00",
+  "completed_at": "2026-09-30T05:58:00.756350+00:00",
   "total_pages": 111,
   "total_rows_written": 551358,
   "file_sha256": "703dc619c0269667dcd8606b4c75fb56f441a90d503de5cc22166b20277fe232"

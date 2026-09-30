@@ -19,7 +19,7 @@ const WEB = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const R2DIR = join(WEB, "dist", "r2");
 const remote = process.argv.includes("--remote");
 const CONCURRENCY = remote ? 8 : 2;
-const MAX_RETRIES = 4;
+const MAX_RETRIES = remote ? 8 : 4;
 const STATE = join(WEB, "dist", "r2", remote ? ".seed-remote.json" : ".seed-local.json");
 
 const files = readdirSync(R2DIR).filter((f) => f.endsWith(".json") && !f.startsWith(".")).sort();
@@ -35,7 +35,7 @@ function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 function putOnce(f) {
   return new Promise((resolve, reject) => {
     const args = ["wrangler", "r2", "object", "put", `sf-ledger-data/${f}`, "--file", join(R2DIR, f)];
-    if (!remote) args.push("--local");
+    args.push(remote ? "--remote" : "--local");
     execFile("npx", args, { cwd: WEB, timeout: 180000 }, (err) => (err ? reject(err) : resolve(f)));
   });
 }

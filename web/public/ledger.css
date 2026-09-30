@@ -495,3 +495,11 @@ table.ruled td.num, table.ruled th.num { text-align: right; }
   .pulse-dot { animation: none; }
   .lift:hover, .openlist a:hover { transform: none; }
 }
+
+/* CSP-safe replacements for the former inline style= attributes (2026-09-29):
+   the Worker ships a strict Content-Security-Policy with no 'unsafe-inline',
+   so presentational tweaks live here, not in the markup. */
+.fineprint--spaced { margin-top: 1.5rem; }
+.detail-head__stamps--flush { margin: 0 0 0.75rem; }
+.section-title--lg { font-size: 1.3rem; margin-top: 2rem; }
+.section-title--md { font-size: 1.3rem; margin-top: 1.5rem; }

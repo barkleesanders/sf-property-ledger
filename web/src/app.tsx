@@ -10,6 +10,7 @@
  */
 import { Hono } from "hono";
 import type { Context } from "hono";
+import { secureHeaders } from "hono/secure-headers";
 import {
   CoveragePage,
   GapsPage,
@@ -45,6 +46,28 @@ function looksLikeParcel(q: string): boolean {
 export function createApp(deps: AppDeps): Hono {
   const { getAdapter, getMode } = deps;
   const app = new Hono();
+
+  // Strict security headers on every response. The site is pure SSR HTML +
+  // CSS — no client JavaScript, no inline styles, no inline event handlers —
+  // so the CSP can stay tight: only Google Fonts leave 'self'. img-src keeps
+  // data: for the inline SVG favicon. Keep in sync with views.tsx: any new
+  // external host or inline style/script here must be allow-listed or it
+  // silently breaks rendering.
+  app.use(
+    secureHeaders({
+      contentSecurityPolicy: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:"],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"],
+      },
+    }),
+  );
 
   function apiError(c: Context, e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);

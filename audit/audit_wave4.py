@@ -89,7 +89,8 @@ def main():
 
     # ---- parcel index (full records needed for address-range check) ----
     by_blklot, by_blocklot = {}, {}
-    t_blocks_parcel = set()  # blocks (with T) present in parcel index
+    t_blocks_parcel = set()  # blocks present in parcel index (keyed on block_num)
+    parcel_tblocks = Counter()  # per-block parcel counts (T-block coverage)
     n_parcels = 0
     for d in stream(PARCELS):
         n_parcels += 1
@@ -102,7 +103,10 @@ def main():
                "lat": d.get("centroid_latitude"), "lon": d.get("centroid_longitude")}
         by_blklot.setdefault(blk, rec)
         by_blocklot.setdefault((rec["block_num"], rec["lot_num"]), rec)
-        t_blocks_parcel.add(norm(d.get("block")))
+        # FIX 2026-09-29: parcel records carry block_num, not "block".
+        # d.get("block") was always None here, silently mis-keying the set.
+        t_blocks_parcel.add(rec["block_num"])
+        parcel_tblocks[rec["block_num"]] += 1
     print(f"  parcels indexed: {n_parcels}", flush=True)
 
     # ---- 1. orphan queue characterization ----
@@ -128,26 +132,30 @@ def main():
             tblock_orphans[pn[:5]] += 1   # EAS block is 5 chars incl T
         else:
             pat["other"] += 1
-    # which EAS T-blocks have zero parcels in the parcel index?
+    # Per-T-block coverage: EAS address counts vs parcel counts, rechecked
+    # against parcel block_num (FIX 2026-09-29: the earlier cut keyed the
+    # parcel block set on the wrong field and wrongly reported ALL T-blocks
+    # missing from the parcel index).
     eas_tblocks = Counter()
     for d in stream(EAS):
         b = norm(d.get("block"))
         if b and "T" in b:
             eas_tblocks[b] += 1
-    missing_tblocks = {b: c for b, c in eas_tblocks.items()
-                       if b not in t_blocks_parcel}
+    tblock_coverage = {
+        b: {"eas_addresses": c, "parcels": parcel_tblocks.get(b, 0)}
+        for b, c in sorted(eas_tblocks.items(), key=lambda x: -x[1])}
     audit["orphans"] = {
         "total": len(orphans),
         "patterns": dict(pat),
-        "eas_tblock_addresses_total": sum(eas_tblocks.values()),
-        "eas_tblocks_distinct": len(eas_tblocks),
-        "tblocks_missing_from_parcel_index": {
-            b: c for b, c in sorted(missing_tblocks.items(),
-                                    key=lambda x: -x[1])[:20]},
-        "tblock_missing_addresses_total": sum(missing_tblocks.values()),
-        "note": ("T-blocks are temporary assessor blocks for large developments. "
-                 "Blocks listed here have addresses in EAS but zero parcels in "
-                 "the active+retired parcel file: a quantified coverage gap."),
+        "tblock_coverage": tblock_coverage,
+        "note": ("CORRECTED 2026-09-29: an earlier cut of this section keyed "
+                 "the parcel block set on the wrong field and wrongly reported "
+                 "all T-blocks missing. Per-T-block recheck against parcel "
+                 "block_num: only block 0253T (1,004 EAS addresses, zero parcels "
+                 "in the active+retired file) is a genuine coverage gap and "
+                 "accounts for 97.6% of orphans. Remaining: 7 null '0000000' "
+                 "parcel numbers, 18 other orphans (normal-looking 7-digit "
+                 "parcel numbers absent from the file, e.g. 3750278, 6944063)."),
     }
 
     # ---- 2. addrmap disagreement, set-membership for multi-parcel baseids ----
@@ -195,17 +203,27 @@ def main():
     for d in verified_rows:
         comp = by_blocklot.get((d["block"], d["lot"])) if d["block"] and d["lot"] else None
         hit = by_blklot.get(d["parcel_number"])
-        if comp is not None and hit is not None and comp is not hit:
+        # FIX 2026-09-29: the old guard required comp is not None, so a
+        # linkage whose (block,lot) composite path resolves to NOTHING was
+        # silently skipped. 7148COMA (EAS block 7148C vs parcel block_num
+        # 7148) is exactly that case: flag whenever the composite path does
+        # not resolve to the same parcel object as the parcel-key path.
+        if hit is not None and comp is not hit:
             anomalies.append({"eas_fullid": d["eas_fullid"],
                               "parcel_number": d["parcel_number"],
-                              "key_hit_blklot": hit["blklot"],
-                              "composite_hit_blklot": comp["blklot"]})
+                              "eas_block_lot": [d["block"], d["lot"]],
+                              "parcel_blocknum_lotnum": [hit["block_num"],
+                                                         hit["lot_num"]]})
             if len(anomalies) >= 5:
                 break
     audit["key_path_anomaly"] = {
         "count": len(anomalies), "rows": anomalies,
-        "note": "parcel-key path and (block,lot) path pointed at different "
-                "parcel objects (expected: identical).",
+        "note": ("RESOLVED 2026-09-29: the single Wave-3 composite-path "
+                 "divergence is a block/lot split disagreement between sources "
+                 "(EAS: block 7148C + lot COMA; parcel file: block_num 7148 + "
+                 "lot_num COMA). The parcel-key link itself (7148COMA == blklot) "
+                 "is exact and correct; the composite path simply cannot "
+                 "reproduce EAS's idiosyncratic split. Not a bad link."),
     }
 
     # ---- 4. 100-sample independent check ----
