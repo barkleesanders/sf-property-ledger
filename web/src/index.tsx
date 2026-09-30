@@ -18,8 +18,11 @@ import { createApp } from "./app.js";
 const app = createApp({ getAdapter, getMode });
 
 // Static assets (node only; Workers use [assets] directory = "./public" in
-// wrangler.toml). Both serve public/ledger.css at /ledger.css.
+// wrangler.toml). Both serve public/ledger.css at /ledger.css, and the FAQ
+// island's built assets (public/faq.css, public/faq-island.js) at their paths.
 app.use("/ledger.css", serveStatic({ root: "./public" }));
+app.use("/faq.css", serveStatic({ root: "./public" }));
+app.use("/faq-island.js", serveStatic({ root: "./public" }));
 
 const PORT = Number(process.env.PORT ?? 8787);
 

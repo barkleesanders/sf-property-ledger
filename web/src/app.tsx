@@ -20,6 +20,13 @@ import {
   NotFoundPage,
   ResultPage,
 } from "./views.js";
+import {
+  loadFaqCorpus,
+  recordContextDoc,
+  SF_EXTRA_RULES,
+  type FaqWorkerBindings,
+} from "./faq/faq-corpus.js";
+import { mountInfiniteFaq } from "./faq/faq-route.js";
 
 export type Mode = "service" | "bundle" | "sample";
 
@@ -43,16 +50,20 @@ function looksLikeParcel(q: string): boolean {
   return /^[0-9]{3,4}[A-Za-z]?[-\/\s]?\d{3,4}[A-Za-z]?$/.test(q.trim());
 }
 
-export function createApp(deps: AppDeps): Hono {
+export function createApp(deps: AppDeps): Hono<{ Bindings: FaqWorkerBindings }> {
   const { getAdapter, getMode } = deps;
-  const app = new Hono();
+  // The FAQ route (mounted below) reads c.env.AI and the FAQ_* rate limiters;
+  // on the node dev server c.env is empty and the route degrades gracefully.
+  const app = new Hono<{ Bindings: FaqWorkerBindings }>();
 
-  // Strict security headers on every response. The site is pure SSR HTML +
-  // CSS — no client JavaScript, no inline styles, no inline event handlers —
-  // so the CSP can stay tight: only Google Fonts leave 'self'. img-src keeps
-  // data: for the inline SVG favicon. Keep in sync with views.tsx: any new
-  // external host or inline style/script here must be allow-listed or it
-  // silently breaks rendering.
+  // Strict security headers on every response. The site is SSR HTML + CSS plus
+  // one same-origin module script (/faq-island.js) driving the header's "Ask
+  // anything" row — no inline scripts, no inline styles, no inline event
+  // handlers — so the CSP stays tight: only Google Fonts leave 'self'.
+  // connect-src 'self' covers the island's POST to /api/faq/ask, form-action
+  // 'self' covers its no-JS fallback form, and img-src keeps data: for the
+  // inline SVG favicon. Keep in sync with views.tsx: any new external host or
+  // inline style/script here must be allow-listed or it silently breaks rendering.
   app.use(
     secureHeaders({
       contentSecurityPolicy: {
@@ -136,6 +147,21 @@ export function createApp(deps: AppDeps): Hono {
 
   app.get("/api/mode", (c) => c.json({ mode: getMode() }));
 
+  // "Ask anything" row in the site header (src/faq/). The record context the
+  // header carries comes from the page (see /result below); the route re-reads
+  // the record with this same adapter, so the model only ever sees what the
+  // page itself shows. On the node dev server there is no AI binding: the
+  // handler degrades to 503, the header row stays a working no-JS form.
+  mountInfiniteFaq(app, {
+    siteName: "SF Property Ledger",
+    fallbackUrl: "/method",
+    corpus: loadFaqCorpus,
+    contextDoc: (_env, ctx) => recordContextDoc(getAdapter, ctx),
+    rateLimiter: (env) => env.FAQ_RATE_LIMITER,
+    globalRateLimiter: (env) => env.FAQ_RATE_LIMITER_GLOBAL,
+    extraRules: [...SF_EXTRA_RULES],
+  });
+
   // ----------------------------------------------------------------- pages
 
   async function page(c: Context, render: (mode: Mode, adapter: LedgerAdapter) => any) {
@@ -207,6 +233,7 @@ export function createApp(deps: AppDeps): Hono {
         title: q,
         mode,
         current: "/",
+        faqContext: { kind, id: q },
         children: ResultPage({ q, profile, rc, expl, mode, kind }),
       });
     }),

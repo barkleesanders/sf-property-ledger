@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "@hono/node-server": "^1.14.1",
-    "hono": "^4.7.0"
+    "hono": "^4.7.0",
+    "zod": "^4.6.5"
   },
   "description": "Hono frontend for the SF property verification ledger (Wave 5b)",
   "devDependencies": {
@@ -18,7 +19,9 @@
     "start": "tsx src/index.tsx",
     "typecheck": "tsc --noEmit",
     "build:data": "node scripts/build-data.mjs",
-    "seed:r2": "node scripts/seed-r2.mjs"
+    "seed:r2": "node scripts/seed-r2.mjs",
+    "build:faq": "esbuild src/faq/faq-island.tsx --bundle --format=esm --minify --target=es2022 --jsx=automatic --jsx-import-source=hono/jsx/dom --outfile=public/faq-island.js && cp src/faq/faq.css public/faq.css",
+    "test": "tsx src/faq/faq.test.ts"
   },
   "type": "module",
   "version": "0.5.0"

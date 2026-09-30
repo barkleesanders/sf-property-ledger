@@ -11,6 +11,11 @@ name = "sf-property-ledger"
 main = "src/worker.ts"
 compatibility_date = "2026-09-01"
 
+# Top-level compatibility flags. enable_request_signal: client disconnects
+# reach the Worker so a stopped FAQ stream ends at once instead of running
+# to the model's end.
+compatibility_flags = ["nodejs_compat", "enable_request_signal"]
+
 # Static assets (public/ledger.css etc.) served by the Worker.
 [assets]
 directory = "./public"
@@ -19,6 +24,26 @@ directory = "./public"
 [[r2_buckets]]
 binding = "DATA"
 bucket_name = "sf-ledger-data"
+
+# Workers AI: the "Ask anything" row streams answers from this binding.
+# remote = true, same as the hospital-ledger sibling: the model runs on
+# Cloudflare's side in dev too.
+[ai]
+binding = "AI"
+remote = true
+
+# Rate limiting for POST /api/faq/ask (see src/faq/faq-route.ts). Fresh
+# namespace ids — hospital-ledger's namespaces are NOT shared, so the two
+# sites can never spend each other's budgets.
+[[ratelimits]]
+name = "FAQ_RATE_LIMITER"
+namespace_id = "2026093001"
+simple = { limit = 20, period = 60 }
+
+[[ratelimits]]
+name = "FAQ_RATE_LIMITER_GLOBAL"
+namespace_id = "2026093002"
+simple = { limit = 600, period = 60 }
 
 [observability]
 enabled = true

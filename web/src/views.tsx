@@ -6,6 +6,8 @@
 // Data wiring is unchanged: every field here mirrors the service layer.
 
 import type { Child } from "hono/jsx";
+import { FaqAskRow } from "./faq/faq-section.js";
+import type { RecordContext } from "./faq/faq-route.js";
 
 export type Mode = "service" | "bundle" | "sample";
 
@@ -26,7 +28,12 @@ function fmt(v: unknown): string {
 
 // ------------------------------------------------------------------- chrome
 
-function Topbar({ current, mode }: { current: string; mode: Mode }) {
+function Topbar({ current, mode, faqContext }: {
+  current: string;
+  mode: Mode;
+  /** The record on the page (a /result page only): the ask row answers about it. */
+  faqContext?: RecordContext;
+}) {
   const nav: Array<[string, string]> = [
     ["/", "Search"],
     ["/gaps", "Gaps"],
@@ -52,6 +59,7 @@ function Topbar({ current, mode }: { current: string; mode: Mode }) {
             {mode === "sample" ? "sample" : mode}
           </span>
         </nav>
+        <FaqAskRow context={faqContext} />
       </div>
     </header>
     </>
@@ -100,8 +108,10 @@ function Colophon() {
   );
 }
 
-export function Layout({ title, current, mode, children }: {
+export function Layout({ title, current, mode, children, faqContext }: {
   title: string; current: string; mode: Mode; children: Child;
+  /** The record on the page (a /result page only): the header ask row answers about it. */
+  faqContext?: RecordContext;
 }) {
   // Canonical URL for the rendered page. Query-bearing pages (e.g. /result)
   // canonicalize to their path so crawlers don't index per-query URLs.
@@ -129,12 +139,14 @@ export function Layout({ title, current, mode, children }: {
         <meta name="twitter:image" content="https://sf-property-ledger.barkleesanders.workers.dev/og.png" />
         <title>{title} · SF Property Ledger</title>
         <link rel="stylesheet" href="/ledger.css" />
+        <link rel="stylesheet" href="/faq.css" />
+        <script type="module" src="/faq-island.js"></script>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <Topbar current={current} mode={mode} />
+        <Topbar current={current} mode={mode} faqContext={faqContext} />
         <main id="main">{children}</main>
         <Colophon />
       </body>

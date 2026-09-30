@@ -11,6 +11,7 @@
 import { createApp, type Mode } from "./app.js";
 import { WorkerDataAdapter } from "./worker-adapter.js";
 import type { BundleJson } from "./data-engine.js";
+import type { FaqAi, FaqRateLimiter } from "./faq/faq-route.js";
 import bundleData from "./data/bundle.json" with { type: "json" };
 
 /** Minimal R2 bucket surface the Worker needs (avoids a workers-types dep). */
@@ -20,6 +21,9 @@ interface R2BucketLike {
 
 interface Env {
   DATA: R2BucketLike;
+  AI: FaqAi;
+  FAQ_RATE_LIMITER?: FaqRateLimiter;
+  FAQ_RATE_LIMITER_GLOBAL?: FaqRateLimiter;
 }
 
 let cachedApp: ReturnType<typeof createApp> | null = null;
