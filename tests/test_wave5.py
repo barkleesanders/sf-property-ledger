@@ -5,6 +5,7 @@ Usage:  python3 repo/tests/test_wave5.py
 Exit 0 = all pass. The store loads once (~17s); keep additions cheap.
 """
 
+import hashlib
 import json
 import os
 import subprocess
@@ -101,8 +102,12 @@ check("coverage tiers present",
 
 w = queries.wave_status()
 w1 = w["waves"][0]["datasets"][0]
-check("wave1 drift reported honestly",
-      w1["rows_match_expected"] is False and w1["row_drift"] == 114,
+# 2026-09-29 REPAIR 1 reconciled the +114 drift through the harvester
+# (expected_rows 551244 -> 551358); the honest post-repair state is zero
+# drift, matched. Pin it so any future drift regression is caught.
+check("wave1 drift reconciled honestly",
+      w1["rows_match_expected"] is True and w1["row_drift"] == 0
+      and w1["rows"] == 551358 and w1["expected_rows"] == 551358,
       f"rows={w1['rows']} expected={w1['expected_rows']}")
 check("wave2 reconciled",
       all(d["rows_match_expected"] for d in w["waves"][1]["datasets"]))
@@ -176,17 +181,20 @@ print(f"mcp test took {time.time() - t0:.0f}s")
 
 # ------------------------------------------------------------- read-only data
 
-# Wave 5 code must never rewrite Waves 1-4 snapshots: no file under
-# data/wave1..wave4 may be newer than the Wave 5 build start.
-build_started = queries.get_store().build_manifest.get("started_at")
-bs = __import__("datetime").datetime.fromisoformat(build_started).timestamp()
-for wave in ("wave1", "wave2", "wave3", "wave4"):
-    dpath = os.path.join(os.path.expanduser("~"),
-                         "workspace/goals/sf-property-verification-ledger/data", wave)
-    newest = max(os.path.getmtime(os.path.join(dp, f))
-                 for dp, _, fs in os.walk(dpath) for f in fs)
-    check(f"data/{wave} untouched by wave5", newest < bs,
-          f"newest={time.ctime(newest)} build_started={build_started}")
+# Wave 5 must never rewrite the Waves 1-4 snapshots it reads: the snapshot
+# bytes hashed at index-build time must be unchanged. Content-hash, not
+# mtime — the 2026-09-29 REPAIR 1 (wave1 manifest refresh) and REPAIR 2
+# (wave4 audit rerun) legitimately touched manifests/logs after the index
+# build without changing any snapshot row the indexes were built from; an
+# mtime guard cannot tell a legitimate repair from a silent rewrite.
+bm = queries.get_store().build_manifest
+for name, spec in sorted(bm.get("inputs", {}).items()):
+    h = hashlib.sha256()
+    with open(spec["path"], "rb") as f:
+        for chunk in iter(lambda: f.read(8 << 20), b""):
+            h.update(chunk)
+    check(f"input snapshot unchanged: {name}", h.hexdigest() == spec["sha256"],
+          f"{spec['path']} pinned={spec['sha256'][:16]}...")
 
 print()
 if FAILURES:

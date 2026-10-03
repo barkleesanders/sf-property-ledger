@@ -1,16 +1,22 @@
 /** Data adapter for the SF property ledger web app.
  *
- * Two modes, one interface:
+ * Three modes, one interface:
  *  - ServiceAdapter: shells out to the Wave 5a CLI (repo/cli/sfledger),
  *    which is the shared typed service layer. JSON in, JSON out.
- *    Per-request CLI spawn reloads the indexes (~20-30s); results are
- *    cached aggressively in-process. Optimization is a Wave 6 item.
+ *    Per-request CLI spawn reloads the indexes (~30s); results are
+ *    cached aggressively in-process. Dev-server only — production Workers
+ *    serve the precomputed bundle via BundleAdapter/WorkerDataAdapter and
+ *    never spawn the CLI.
+ *  - BundleAdapter: serves the precomputed real-data bundle
+ *    (web/src/data/bundle.json, built by `npm run build:data`) plus lookup
+ *    shards. Local/production path; no CLI, no sample badge.
  *  - SampleAdapter: serves baked REAL rows from sample_data.json
  *    (500 real linkage rows + real EAS/parcel/block-evidence/filing rows).
  *    Used when the CLI cannot run. Every surface shows a SAMPLE DATA badge.
  *
  * Mode is auto-detected once at startup: if `sfledger waves` returns valid
- * JSON, the CLI is alive and we use the service. Otherwise sample mode.
+ * JSON, the CLI is alive and we use the service. Otherwise bundle, then
+ * sample as the local-dev fallback.
  */
 
 import { execFile } from "node:child_process";
