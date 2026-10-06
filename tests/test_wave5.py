@@ -99,6 +99,32 @@ check("coverage pct sane",
 check("coverage tiers present",
       c["unmatched_queues"]["no_parcel_key"] == 120242
       and c["unmatched_queues"]["orphan_parcel_numbers"] == 1029)
+check("0253T gap derived from audit (not hardcoded)",
+      c["unmatched_queues"]["tblock_0253T_gap_addresses"] == 1004)
+
+# ---- edge cases: retired parcels, orphan identifiers, T-blocks ----
+rt = queries.lookup_parcel("3537059")
+check("retired parcel found+inactive",
+      rt["found"] is True and rt["parcel"]["active"] is False
+      and rt["parcel"]["blklot"] == "3537059")
+re_ = queries.explain("3537059")
+check("retired parcel explain caveat",
+      any("Retired parcels" in x for x in re_["caveats"]),
+      str(re_["caveats"]))
+
+oa = queries.lookup_address("1501 GREAT HWY")
+check("orphan parcel_number tier",
+      oa["found"] is True and "unmatched_orphan" in oa["tiers_present"],
+      str(oa["tiers_present"]))
+
+tb = queries.lookup_parcel("0452T044H")
+check("t-block parcel found",
+      tb["found"] is True and tb["parcel"]["block_num"] == "0452T")
+tbrc = queries.rent_control_evidence("0452T044H")
+check("t-block rc resolves block-level",
+      tbrc["found"] is True
+      and tbrc["resolved"]["block_num"] == "0452T"
+      and tbrc["block"]["scope"] == "block-level filing evidence only")
 
 w = queries.wave_status()
 w1 = w["waves"][0]["datasets"][0]
@@ -109,6 +135,11 @@ check("wave1 drift reconciled honestly",
       w1["rows_match_expected"] is True and w1["row_drift"] == 0
       and w1["rows"] == 551358 and w1["expected_rows"] == 551358,
       f"rows={w1['rows']} expected={w1['expected_rows']}")
+check("wave1 note reflects reconciled state",
+      "expected_rows is stale" not in w["waves"][0]["note"]
+      and "reconciled" in w["waves"][0]["note"]
+      and "CURRENT DRIFT" not in w["waves"][0]["note"],
+      w["waves"][0]["note"][:90])
 check("wave2 reconciled",
       all(d["rows_match_expected"] for d in w["waves"][1]["datasets"]))
 check("wave5 complete", w["waves"][4]["status"] == "complete"

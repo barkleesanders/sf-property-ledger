@@ -101,7 +101,7 @@ class CoverageStats:
     pct_blocks_with_filings: float
     unmatched_no_parcel_key: int
     unmatched_orphan_parcel_numbers: int
-    tblock_0253t_gap_addresses: int
+    tblock_0253t_gap_addresses: Optional[int]
     independent_sample_agreement: Optional[float]
     addrmap_conflict_rate: Optional[float]
     negative_controls_passed: Optional[bool]

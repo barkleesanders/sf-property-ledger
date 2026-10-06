@@ -278,6 +278,23 @@ def _load_json(path):
         return {}
 
 
+def _tblock_gap_addresses(audit):
+    """EAS address count on the zero-parcel T-block (the 0253T coverage gap).
+
+    Derived live from the Wave 4 audit's per-T-block coverage table instead of
+    a hardcoded constant: if the audit is ever re-run and the gap moves, this
+    follows it. Returns None when the audit records no zero-parcel T-block
+    (could not measure — investigate, don't invent a number).
+    """
+    tc = audit.get("orphans", {}).get("tblock_coverage", {})
+    zero = [(b, v.get("eas_addresses")) for b, v in tc.items()
+            if isinstance(v, dict) and v.get("parcels") == 0
+            and isinstance(v.get("eas_addresses"), int)]
+    if not zero:
+        return None
+    return max(zero, key=lambda z: z[1])[1]
+
+
 def coverage_report():
     store = get_store()
     audit = _load_json(os.path.join(BASE, "data/wave4/audit.json"))
@@ -311,7 +328,7 @@ def coverage_report():
         if parcel_blocks else 0,
         unmatched_no_parcel_key=store.tier_counts.get("unmatched_no_parcel", 0),
         unmatched_orphan_parcel_numbers=store.tier_counts.get("unmatched_orphan", 0),
-        tblock_0253t_gap_addresses=1004,
+        tblock_0253t_gap_addresses=_tblock_gap_addresses(audit),
         independent_sample_agreement=indep.get("agreement_rate"),
         addrmap_conflict_rate=conflicts.get("conflict_rate"),
         negative_controls_passed=_load_json(
@@ -377,12 +394,20 @@ def wave_status():
         }
 
     w1 = man(os.path.join(BASE, "data/wave1/gdc7-dmcn.manifest.json"))
+    w1e = ds_entry(w1, "Rent Board Housing Inventory")
+    w1_note = ("2026-09-29 harvest: live row count grew +114 mid-harvest "
+               "(551,244 -> 551,358); reconciled through the harvester resume "
+               "path — manifest expected_rows now matches the snapshot.")
+    if w1e["row_drift"]:
+        w1_note += (f" CURRENT DRIFT: {w1e['row_drift']:+d} rows vs manifest "
+                    "(rows=%d expected=%d) — re-harvest advised before "
+                    "trusting wave-1 freshness."
+                    % (w1e["rows"], w1e["expected_rows"]))
     waves = [{
         "wave": 1, "title": "Rent Board Housing Inventory harvest",
-        "datasets": [ds_entry(w1, "Rent Board Housing Inventory")],
+        "datasets": [w1e],
         "status": "complete" if w1.get("completed_at") else "incomplete",
-        "note": ("Live row count grew +114 during harvest (551,244 -> 551,358); "
-                 "manifest expected_rows is stale. Snapshot verified intact."),
+        "note": w1_note,
     }]
     w2sets = []
     for dsid, title in [("8jwb-2stv", "Parcels - Active and Retired"),

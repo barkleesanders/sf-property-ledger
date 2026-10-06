@@ -12,8 +12,9 @@ disagreement — preserve it as a recorded conflict instead.
   path (Workers serve the precomputed R2 bundle — see superseded item below),
   so this is local-dev ergonomics only. Optimize (persistent subprocess or
   socket) only if dev iteration latency becomes a bottleneck.
-- [ ] **Coverage**: raise test coverage for `queries.py` edge cases —
-  T-block handling, orphan parcel identifiers, retired-parcel relationships.
+  (2026-10-06 data point: full test_wave5.py CLI leg shows 27–43s per
+  `cli/sfledger` invocation, each reloading the 98MB index from disk —
+  consistent with the ~31s figure; still dev-only.)
 
 ## Landed
 
@@ -45,3 +46,14 @@ disagreement — preserve it as a recorded conflict instead.
   reconciled state (551,358 = 551,358, drift 0) and the data guard compares
   content hashes against the index manifest's pinned input sha256s instead
   of mtimes. Full suite green again.
+- 2026-10-06: `queries.py` edge-case coverage raised (T-block handling,
+  orphan parcel identifiers, retired-parcel relationships) — 7 new checks
+  in test_wave5.py using real fixtures (retired parcel 3537059, orphan
+  address 1501 GREAT HWY, T-block parcel 0452T044H). Also fixed two
+  staleness bugs the new tests caught: (1) `wave_status()` wave-1 note still
+  claimed "manifest expected_rows is stale" after REPAIR 1 reconciled it —
+  note now states the reconciled history and only warns on live drift;
+  (2) `coverage_report()` hardcoded `tblock_0253t_gap_addresses=1004` —
+  now derived from the Wave 4 audit's per-T-block coverage table
+  (`CoverageStats.tblock_0253t_gap_addresses` widened to Optional[int];
+  returns None = could-not-measure if the audit shape changes).

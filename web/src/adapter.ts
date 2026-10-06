@@ -374,6 +374,17 @@ class SampleAdapter {
     // backend's own rule (build_indexes.py: "#" in addr or " UNIT " in norm).
     const unitRows = 156018;
     const addrTotal = eas.rows ?? 0;
+    // 0253T gap: derived from the Wave 4 audit's per-T-block coverage table
+    // (the zero-parcel T-block), not hardcoded — follows the audit on re-run.
+    const tblockCov = audit.orphans?.tblock_coverage ?? {};
+    let tblockGap: number | null = null;
+    for (const v of Object.values(tblockCov) as any[]) {
+      if (v && typeof v === "object" && v.parcels === 0
+          && typeof v.eas_addresses === "number") {
+        tblockGap = tblockGap === null ? v.eas_addresses
+          : Math.max(tblockGap, v.eas_addresses);
+      }
+    }
     return this.withMode({
       parcels: {
         total: parcels.rows,
@@ -396,7 +407,7 @@ class SampleAdapter {
       unmatched_queues: {
         no_parcel_key: tiers.unmatched_no_parcel,
         orphan_parcel_numbers: tiers.unmatched_orphan,
-        tblock_0253T_gap_addresses: 1004,
+        tblock_0253T_gap_addresses: tblockGap,
       },
       verification: {
         independent_sample_agreement: indep.agreement_rate,
