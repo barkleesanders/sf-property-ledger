@@ -6,15 +6,13 @@ disagreement — preserve it as a recorded conflict instead.
 
 ## Open
 
-- [ ] **web/ ServiceAdapter (dev-server only)**: per-request CLI spawns reload
-  the indexes (~31s measured on the VM 2026-10-03); the 15-min/Infinity
-  in-process cache already mitigates repeat hits. Production never uses this
-  path (Workers serve the precomputed R2 bundle — see superseded item below),
-  so this is local-dev ergonomics only. Optimize (persistent subprocess or
-  socket) only if dev iteration latency becomes a bottleneck.
-  (2026-10-06 data point: full test_wave5.py CLI leg shows 27–43s per
-  `cli/sfledger` invocation, each reloading the 98MB index from disk —
-  consistent with the ~31s figure; still dev-only.)
+- [ ] **VM test env**: `python3 -m pytest` unavailable — no pytest installed and
+  `pip install` is blocked by PEP 668 (externally-managed environment).
+  2026-10-10: ran the suite via its own runner (`python3 tests/test_wave5.py`,
+  30+ checks) instead; pytest would collect 0 tests from that file anyway (no
+  `test_*` functions — the checks live in its own harness). Decide: install
+  pytest via apt (`python3-pytest`) or officially standardize the direct
+  runner in the loop body.
 
 ## Landed
 
@@ -57,3 +55,17 @@ disagreement — preserve it as a recorded conflict instead.
   now derived from the Wave 4 audit's per-T-block coverage table
   (`CoverageStats.tblock_0253t_gap_addresses` widened to Optional[int];
   returns None = could-not-measure if the audit shape changes).
+- 2026-10-10: web/ ServiceAdapter persistent daemon — new
+  `web/scripts/cli-daemon.py` loads the ~98MB Wave 5a indexes once and
+  answers newline-delimited JSON requests on stdin (calls the same
+  `sfledger.queries` functions as `cli/sfledger`, so outputs are identical
+  by construction). `ServiceAdapter` (`web/src/adapter.ts`) now multiplexes
+  queries over the single daemon with per-request timeout, auto-respawn,
+  one retry on daemon death, and fallback to per-request `execFile` spawns
+  when the daemon cannot start (or when SFLEDGER_CLI points at a custom CLI
+  binary). Measured 2026-10-10 on the VM: cold `cli/sfledger waves` = 33.9s;
+  daemon answers post-warmup queries in milliseconds. Parity proven by new
+  `npm run test:daemon` (8 subcommand cases daemon-vs-CLI deep-equal + 3
+  protocol-robustness cases, all pass); `tsc --noEmit` clean; faq tests
+  12/12; full test_wave5.py suite green. Production untouched — worker.ts
+  still serves only the R2 bundle path.

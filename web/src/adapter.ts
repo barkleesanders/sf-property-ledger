@@ -1,12 +1,15 @@
 /** Data adapter for the SF property ledger web app.
  *
  * Three modes, one interface:
- *  - ServiceAdapter: shells out to the Wave 5a CLI (repo/cli/sfledger),
- *    which is the shared typed service layer. JSON in, JSON out.
- *    Per-request CLI spawn reloads the indexes (~30s); results are
- *    cached aggressively in-process. Dev-server only — production Workers
- *    serve the precomputed bundle via BundleAdapter/WorkerDataAdapter and
- *    never spawn the CLI.
+ *  - ServiceAdapter: talks to the Wave 5a CLI (repo/cli/sfledger), the
+ *    shared typed service layer. JSON in, JSON out. Queries go through a
+ *    persistent cli-daemon.py subprocess (web/scripts/) that loads the
+ *    ~98MB indexes once per dev-server lifetime, instead of a per-request
+ *    CLI spawn (~30s index reload each). Results are cached aggressively
+ *    in-process. If the daemon cannot start, the adapter falls back to
+ *    per-request spawns. Dev-server only — production Workers serve the
+ *    precomputed bundle via BundleAdapter/WorkerDataAdapter and never
+ *    spawn the CLI.
  *  - BundleAdapter: serves the precomputed real-data bundle
  *    (web/src/data/bundle.json, built by `npm run build:data`) plus lookup
  *    shards. Local/production path; no CLI, no sample badge.
@@ -19,7 +22,8 @@
  * sample as the local-dev fallback.
  */
 
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -62,6 +66,156 @@ function runCli(args: string[], timeoutMs = 180_000): Promise<string> {
   });
 }
 
+// ------------------------------------------------- persistent CLI daemon
+//
+// cli-daemon.py loads the Wave 5a indexes once and answers newline-delimited
+// JSON requests on stdin: {"id","cmd","args"} -> {"id","ok","result"/"error"}.
+// One daemon per dev-server process; it exits on stdin EOF (no orphans).
+
+const DAEMON_PATH = join(WEB_DIR, "scripts", "cli-daemon.py");
+const DAEMON_TIMEOUT_MS = 120_000;
+
+/** Daemon could not be spawned — caller should fall back to per-request execFile. */
+class DaemonStartError extends Error {}
+/** Daemon died with a request outstanding — caller may retry once on a fresh daemon. */
+class DaemonExitedError extends Error {}
+
+interface DaemonResponse {
+  id: number | null;
+  ok: boolean;
+  result?: unknown;
+  error?: { type: string; message: string };
+}
+
+interface DaemonPending {
+  resolve: (r: DaemonResponse) => void;
+  reject: (e: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+}
+
+class DaemonClient {
+  private child: ChildProcess | null = null;
+  private startPromise: Promise<void> | null = null;
+  private nextId = 1;
+  private pending = new Map<number | null, DaemonPending>();
+  private buf = "";
+
+  private onExit(reason: string): void {
+    if (this.child) {
+      try {
+        this.child.kill("SIGKILL");
+      } catch {
+        /* already dead */
+      }
+    }
+    this.child = null;
+    this.startPromise = null;
+    const err = new DaemonExitedError(`cli-daemon ${reason}`);
+    for (const [, p] of this.pending) {
+      clearTimeout(p.timer);
+      p.reject(err);
+    }
+    this.pending.clear();
+    this.buf = "";
+  }
+
+  private onData(d: Buffer): void {
+    this.buf += d.toString("utf8");
+    let idx: number;
+    while ((idx = this.buf.indexOf("\n")) >= 0) {
+      const line = this.buf.slice(0, idx).trim();
+      this.buf = this.buf.slice(idx + 1);
+      if (!line) continue;
+      let resp: DaemonResponse;
+      try {
+        resp = JSON.parse(line) as DaemonResponse;
+      } catch {
+        continue; // never crash on a bad line
+      }
+      const p = this.pending.get(resp.id);
+      if (!p) continue;
+      this.pending.delete(resp.id);
+      clearTimeout(p.timer);
+      if (resp.ok) p.resolve(resp);
+      else
+        p.reject(
+          new Error(
+            `sfledger ${resp.error?.type ?? "error"}: ${resp.error?.message ?? "unknown"}`,
+          ),
+        );
+    }
+  }
+
+  private start(): Promise<void> {
+    if (this.child && this.child.exitCode === null) return Promise.resolve();
+    if (this.startPromise) return this.startPromise;
+    this.startPromise = new Promise<void>((resolve, reject) => {
+      let settled = false;
+      let child: ChildProcess;
+      try {
+        child = spawn(DAEMON_PATH, [], { stdio: ["pipe", "pipe", "pipe"] });
+      } catch (e) {
+        this.startPromise = null;
+        reject(new DaemonStartError(`daemon spawn threw: ${e}`));
+        return;
+      }
+      child.on("error", (e: Error) => {
+        this.onExit(`spawn error: ${e.message}`);
+        if (!settled) {
+          settled = true;
+          this.startPromise = null;
+          reject(new DaemonStartError(`daemon spawn error: ${e.message}`));
+        }
+      });
+      // Note: 'exit' during warmup fires after resolve() below (next tick),
+      // so the !settled branch only catches an already-dead spawn.
+      child.on("exit", (code: number | null, signal: string | null) => {
+        this.onExit(`exited (code=${code} signal=${signal})`);
+        if (!settled) {
+          settled = true;
+          this.startPromise = null;
+          reject(new DaemonStartError(`daemon exited during startup (code=${code})`));
+        }
+      });
+      if (child.stdout) child.stdout.on("data", (d: Buffer) => this.onData(d));
+      if (child.stderr)
+        child.stderr.on("data", (d: Buffer) => {
+          process.stderr.write(`[cli-daemon] ${d}`);
+        });
+      this.child = child;
+      settled = true;
+      resolve();
+    });
+    return this.startPromise;
+  }
+
+  /** Send one query; resolves with the result object (same shape as the CLI). */
+  async call(cmd: string, args: Record<string, unknown>): Promise<unknown> {
+    await this.start(); // throws DaemonStartError when unspawnable
+    const child = this.child;
+    if (!child || child.exitCode !== null || !child.stdin) {
+      throw new DaemonExitedError("daemon is not running");
+    }
+    const id = this.nextId++;
+    const stdin = child.stdin;
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        this.onExit(`timed out on '${cmd}'`);
+        reject(new DaemonExitedError(`daemon timeout on '${cmd}'`));
+      }, DAEMON_TIMEOUT_MS);
+      this.pending.set(id, { resolve: (r) => resolve(r.result), reject, timer });
+      stdin.write(JSON.stringify({ id, cmd, args }) + "\n", (err) => {
+        if (err) {
+          this.pending.delete(id);
+          clearTimeout(timer);
+          reject(new DaemonExitedError(`daemon write failed: ${err.message}`));
+        }
+      });
+    });
+  }
+}
+
 // --------------------------------------------------------------------- cache
 
 interface CacheEntry {
@@ -82,38 +236,62 @@ async function cached(key: string, ttlMs: number, fn: () => Promise<unknown>): P
 // ------------------------------------------------------------ service adapter
 
 class ServiceAdapter {
-  private call(cmd: string[]): Promise<unknown> {
-    const key = `svc:${JSON.stringify(cmd)}`;
-    const ttl = cmd[0] === "coverage" || cmd[0] === "waves" || cmd[0] === "gaps" ? Infinity : LOOKUP_TTL_MS;
+  private daemon = new DaemonClient();
+  // A custom CLI binary (SFLEDGER_CLI) cannot be wrapped by the daemon, which
+  // imports sfledger directly — keep per-request spawns in that case.
+  private daemonOk = existsSync(DAEMON_PATH) && !process.env.SFLEDGER_CLI;
+
+  /** Raw query: daemon first, per-request CLI spawn as fallback. No cache. */
+  async rawCall(cmd: string, args: Record<string, unknown>, argv: string[]): Promise<unknown> {
+    if (this.daemonOk) {
+      try {
+        return await this.daemon.call(cmd, args);
+      } catch (e) {
+        if (e instanceof DaemonStartError) {
+          this.daemonOk = false; // daemon unusable this session: fall through
+        } else if (e instanceof DaemonExitedError) {
+          return this.daemon.call(cmd, args); // one retry on a fresh daemon
+        } else {
+          throw e;
+        }
+      }
+    }
+    const out = await runCli(argv);
+    return JSON.parse(out);
+  }
+
+  private call(cmd: string, args: Record<string, unknown>, argv: string[]): Promise<unknown> {
+    const key = `svc:${cmd}:${JSON.stringify(args)}`;
+    const ttl = cmd === "coverage" || cmd === "waves" || cmd === "gaps" ? Infinity : LOOKUP_TTL_MS;
     return cached(key, ttl, async () => {
-      const out = await runCli(cmd);
-      const parsed = JSON.parse(out) as Record<string, unknown>;
+      const parsed = (await this.rawCall(cmd, args, argv)) as Record<string, unknown>;
       return { ...parsed, mode: "service" as Mode };
     });
   }
 
   lookupAddress(q: string): Promise<unknown> {
-    return this.call(["address", q]);
+    return this.call("address", { address: q }, ["address", q]);
   }
   lookupParcel(q: string): Promise<unknown> {
-    return this.call(["parcel", q]);
+    return this.call("parcel", { blklot: q }, ["parcel", q]);
   }
   rentControlEvidence(q: string): Promise<unknown> {
-    return this.call(["rc", q]);
+    return this.call("rc", { query: q }, ["rc", q]);
   }
   filingGap(neighborhood: string | undefined, limit: number): Promise<unknown> {
-    const args = ["gaps", "--limit", String(limit)];
-    if (neighborhood) args.push("--neighborhood", neighborhood);
-    return this.call(args);
+    const args: Record<string, unknown> = { neighborhood: neighborhood ?? null, limit };
+    const argv = ["gaps", "--limit", String(limit)];
+    if (neighborhood) argv.push("--neighborhood", neighborhood);
+    return this.call("gaps", args, argv);
   }
   coverageReport(): Promise<unknown> {
-    return this.call(["coverage"]);
+    return this.call("coverage", {}, ["coverage"]);
   }
   waveStatus(): Promise<unknown> {
-    return this.call(["waves"]);
+    return this.call("waves", {}, ["waves"]);
   }
   explain(q: string): Promise<unknown> {
-    return this.call(["explain", q]);
+    return this.call("explain", { query: q }, ["explain", q]);
   }
 }
 
@@ -502,12 +680,12 @@ export async function initAdapter(): Promise<Mode> {
   // 500-row sample (local-dev fallback only, badged).
   // The Python CLI is authoritative per project direction, so it is probed
   // FIRST — the bundle is only a local fallback when the CLI cannot run.
-  if (existsSync(CLI_PATH)) {
+  if (existsSync(CLI_PATH) || existsSync(DAEMON_PATH)) {
+    const probe = new ServiceAdapter();
     try {
-      const out = await runCli(["waves"], 180_000);
-      const parsed = JSON.parse(out) as Record<string, unknown>;
+      const parsed = (await probe.rawCall("waves", {}, ["waves"])) as Record<string, unknown>;
       if (parsed && Array.isArray(parsed.waves)) {
-        adapter = new ServiceAdapter();
+        adapter = probe;
         activeMode = "service";
         // Warm the two slowest shared caches in the background.
         void (adapter as ServiceAdapter).coverageReport().catch(() => {});
@@ -519,7 +697,7 @@ export async function initAdapter(): Promise<Mode> {
       detectError = e instanceof Error ? e.message : String(e);
     }
   } else {
-    detectError = "CLI not found at " + CLI_PATH;
+    detectError = `CLI not found at ${CLI_PATH} and no daemon at ${DAEMON_PATH}`;
   }
   if (BundleAdapter.available()) {
     adapter = new BundleAdapter();

@@ -21,7 +21,8 @@
     "build:data": "node scripts/build-data.mjs",
     "seed:r2": "node scripts/seed-r2.mjs",
     "build:faq": "esbuild src/faq/faq-island.tsx --bundle --format=esm --minify --target=es2022 --jsx=automatic --jsx-import-source=hono/jsx/dom --outfile=public/faq-island.js && cp src/faq/faq.css public/faq.css",
-    "test": "tsx src/faq/faq.test.ts"
+    "test": "tsx src/faq/faq.test.ts",
+    "test:daemon": "node scripts/test-cli-daemon.mjs"
   },
   "type": "module",
   "version": "0.5.0"
