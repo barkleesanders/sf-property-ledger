@@ -6,13 +6,7 @@ disagreement — preserve it as a recorded conflict instead.
 
 ## Open
 
-- [ ] **VM test env**: `python3 -m pytest` unavailable — no pytest installed and
-  `pip install` is blocked by PEP 668 (externally-managed environment).
-  2026-10-10: ran the suite via its own runner (`python3 tests/test_wave5.py`,
-  30+ checks) instead; pytest would collect 0 tests from that file anyway (no
-  `test_*` functions — the checks live in its own harness). Decide: install
-  pytest via apt (`python3-pytest`) or officially standardize the direct
-  runner in the loop body.
+(none — next finding gets appended here)
 
 ## Landed
 
@@ -55,6 +49,22 @@ disagreement — preserve it as a recorded conflict instead.
   now derived from the Wave 4 audit's per-T-block coverage table
   (`CoverageStats.tblock_0253t_gap_addresses` widened to Optional[int];
   returns None = could-not-measure if the audit shape changes).
+- 2026-10-13: VM test env DECIDED — the direct runner is now the official
+  standard, not pytest. Evidence re-verified 2026-10-13 on the VM:
+  `python3 -m pytest` → no module; `pip install pytest` → PEP 668
+  externally-managed block; `apt-cache policy python3-pytest` → no
+  candidate (the apt route the 2026-10-10 item proposed does not exist
+  on this VM). New `tests/run_tests.py` is the canonical stdlib-only
+  runner (wave5 + supervisor suites, live-streamed, exit 0 only if all
+  pass; full run green: wave5 ALL PASS in 236s, supervisor PASS).
+  `tests/README.md` documents the suites and rationale; a new
+  `tests/conftest.py` guard makes any pytest invocation abort with a
+  usage error pointing at the canonical runner instead of collecting
+  0 tests from the harness-style suite and looking like a result.
+  Also: `test_wave5.py` now derives the repo root from its own file
+  location instead of a hardcoded VM path (identical resolution on
+  the VM, portable to the Mini clone), and `.pytest_cache/` is
+  gitignored. Web tests unchanged (`npm test` 12/12 this run).
 - 2026-10-10: web/ ServiceAdapter persistent daemon — new
   `web/scripts/cli-daemon.py` loads the ~98MB Wave 5a indexes once and
   answers newline-delimited JSON requests on stdin (calls the same

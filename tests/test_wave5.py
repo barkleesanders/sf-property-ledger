@@ -12,8 +12,11 @@ import subprocess
 import sys
 import time
 
-REPO = os.path.join(os.path.expanduser("~"),
-                    "workspace/goals/sf-property-verification-ledger/repo")
+# Repo root derived from this file's location (repo/tests/test_wave5.py),
+# not a hardcoded VM path — the suite must run identically from the VM
+# working tree and the Mini canonical clone. On the VM this resolves to
+# exactly the path that was previously hardcoded.
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
 
 from sfledger import queries  # noqa: E402

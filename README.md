@@ -61,6 +61,16 @@ python3 audit/audit_wave4.py
 
 Each script verifies hashes of what it wrote. See `docs/` for methodology.
 
+## Tests
+
+```bash
+python3 tests/run_tests.py   # canonical runner, stdlib-only (~3-4 min)
+```
+
+pytest is not the gate for this repo (it collects 0 tests from the
+harness-style suite, and is not installable on the VM). See
+`tests/README.md` for the suites and the rationale.
+
 ## Disclaimer
 
 Rent Board filings measure **filing/reporting activity**, not legal
