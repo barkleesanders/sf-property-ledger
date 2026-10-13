@@ -6,7 +6,11 @@ disagreement — preserve it as a recorded conflict instead.
 
 ## Open
 
-(none — next finding gets appended here)
+- [ ] **Dependabot alert (2026-10-13)**: GitHub reports 1 high-severity
+  vulnerability on the default branch (security/dependabot/1), and this
+  run's pull fetched a new `dependabot/npm_and_yarn/web/npm_and_yarn-*`
+  branch. Review the alert/PR, verify any bump keeps `npm run build:data`
+  deterministic and parity 17/17, then merge or dismiss with a reason.
 
 ## Landed
 
