@@ -6,11 +6,9 @@ disagreement — preserve it as a recorded conflict instead.
 
 ## Open
 
-- [ ] **Dependabot alert (2026-10-13)**: GitHub reports 1 high-severity
-  vulnerability on the default branch (security/dependabot/1), and this
-  run's pull fetched a new `dependabot/npm_and_yarn/web/npm_and_yarn-*`
-  branch. Review the alert/PR, verify any bump keeps `npm run build:data`
-  deterministic and parity 17/17, then merge or dismiss with a reason.
+- [ ] **store.py hardcodes the VM canonical path (2026-10-17)**: `sfledger/store.py` sets `BASE = os.path.expanduser("~/workspace/goals/sf-property-verification-ledger")`, so the CLI/MCP service layer throws IndexNotBuilt on any clone not mounted at that exact path — proven 2026-10-17 when the Mini clone failed with "…/workspace/goals/sf-property-verification-ledger/repo/sfledger/indexes/parcels.idx.json is missing" even with the indexes present in the clone. `/Users/barkleesanders/workspace` on the Mini is a JSON file, so the canonical-path shim is impossible there. The 2026-10-13 test-only fix (derive repo root from the test file's location) should be extended to store.py the same way. Owned by the Wave 5 workers per the landing-paths rule.
+
+
 
 ## Landed
 
@@ -53,6 +51,15 @@ disagreement — preserve it as a recorded conflict instead.
   now derived from the Wave 4 audit's per-T-block coverage table
   (`CoverageStats.tblock_0253t_gap_addresses` widened to Optional[int];
   returns None = could-not-measure if the audit shape changes).
+- 2026-10-17: **Dependabot high alert merged** — the sharp bump
+  (0.35.4 → 0.35.5, transitive via miniflare; wrangler devDependency
+  ^4.144.0 → ^4.149.0) was verified on the bumped tree before merging:
+  `npm run build:data` byte-identical across two consecutive runs
+  (bundle.json `e88d43a4…`, `_manifest.json` `5c457164…`), parity 17/17,
+  web tests 12/12 faq + 8/8 daemon-parity, `tsc --noEmit` clean, and the
+  canonical Python suite ALL PASS. Neither sharp nor wrangler touches the
+  data pipeline, the CLI, or the Worker bundle path, so the alert is
+  resolved with zero product risk.
 - 2026-10-13: VM test env DECIDED — the direct runner is now the official
   standard, not pytest. Evidence re-verified 2026-10-13 on the VM:
   `python3 -m pytest` → no module; `pip install pytest` → PEP 668
