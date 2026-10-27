@@ -15,8 +15,17 @@ from datetime import datetime, timezone
 
 from sfledger.models import Address, BlockEvidence, LinkedAddress, Parcel
 
-BASE = os.path.expanduser("~/workspace/goals/sf-property-verification-ledger")
-REPO_DIR = os.path.join(BASE, "repo")
+# Repo root derived from this file's location (repo/sfledger/store.py),
+# not a hardcoded VM path — the service layer must work from any clone
+# (VM working tree, Mini canonical clone, or anywhere else). Same pattern
+# as tests/test_wave5.py (2026-10-13). Previously BASE hardcoded the
+# VM goal-root path, so the CLI/MCP threw IndexNotBuilt on the Mini
+# clone even with the indexes present in it.
+REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Kept for backward compatibility: the parent of the repo root. On the VM
+# layout that is the goal root; do not use it to locate the indexes —
+# DATA5 (inside the repo itself) is the only index location.
+BASE = os.path.dirname(REPO_DIR)
 DATA5 = os.path.join(REPO_DIR, "sfledger", "indexes")
 
 PARCEL_FIELDS = ["blklot", "block_num", "lot_num", "active", "street_name",
@@ -61,7 +70,7 @@ def _load_idx(name):
     if not os.path.exists(path):
         raise IndexNotBuilt(
             f"{path} is missing. Build the derived indexes once with: "
-            "python3 ~/workspace/goals/sf-property-verification-ledger/repo/sfledger/build_indexes.py"
+            f"python3 {os.path.join(REPO_DIR, 'sfledger', 'build_indexes.py')}"
         )
     with open(path, encoding="utf-8") as f:
         return json.load(f)

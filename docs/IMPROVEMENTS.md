@@ -6,12 +6,27 @@ disagreement — preserve it as a recorded conflict instead.
 
 ## Open
 
-- [ ] **store.py hardcodes the VM canonical path (2026-10-17)**: `sfledger/store.py` sets `BASE = os.path.expanduser("~/workspace/goals/sf-property-verification-ledger")`, so the CLI/MCP service layer throws IndexNotBuilt on any clone not mounted at that exact path — proven 2026-10-17 when the Mini clone failed with "…/workspace/goals/sf-property-verification-ledger/repo/sfledger/indexes/parcels.idx.json is missing" even with the indexes present in the clone. `/Users/barkleesanders/workspace` on the Mini is a JSON file, so the canonical-path shim is impossible there. The 2026-10-13 test-only fix (derive repo root from the test file's location) should be extended to store.py the same way. Owned by the Wave 5 workers per the landing-paths rule.
+- [ ] **queries.py / build_indexes.py still hardcode the VM goal root for data/ (2026-10-27)**: the store.py fix below only covers the indexes, which live inside the repo. `sfledger/queries.py` still sets `BASE = os.path.expanduser("~/workspace/goals/sf-property-verification-ledger")` and reads `data/wave1–4` manifests/audit/stats through it, and `sfledger/build_indexes.py` does the same for the raw snapshots. The data snapshots genuinely live outside the repo (~1.1GB, never committed), so there is no in-repo derivation: on a non-VM clone those reads silently degrade (`_load_json` swallows OSError → empty coverage/wave-status inputs) instead of failing loudly. Needs a deliberate data-dir resolution strategy (e.g. `SFLEDGER_DATA_DIR` env override, then a sibling `data/` next to the repo, then the VM default) with the chosen directory surfaced in provenance. `link/link_wave3.py` and `audit/audit_wave4.py` carry the same pattern but are wave scripts tied to the VM data layout — lower priority.
 
 
 
 ## Landed
 
+- 2026-10-27: **store.py portability fixed** — `sfledger/store.py` now
+  derives `REPO_DIR` from its own file location (`repo/sfledger/store.py`,
+  the 2026-10-13 test-file pattern) instead of hardcoding
+  `~/workspace/goals/sf-property-verification-ledger`; `DATA5` is the
+  in-repo `sfledger/indexes/` under that root, `BASE` is kept as the
+  repo's parent (identical value on the VM layout), and the
+  IndexNotBuilt remediation message now points at the clone's own
+  `build_indexes.py`. Worked by the improvement loop after the Wave
+  5a/5b landings were checked off (the landing-paths hold no longer
+  applies). Proven three ways: VM paths resolve identically to before;
+  a relocated copy of the package under /tmp resolves DATA5 and its
+  error message under /tmp; on the Mini clone `store.DATA5` now
+  resolves inside ~/projects/sf-property-ledger instead of the VM path.
+  Three new regression checks in `tests/test_wave5.py` (REPO_DIR
+  derivation, DATA5 in-repo, no hardcoded VM goal path in store.py).
 - 2026-09-29: initial commit — waves 1–4 harvesters, linkage, audit,
   hash-pinned manifests, CONTRACT.md, research brief.
 - 2026-09-29: Wave 1 manifest drift reconciled through the harvester

@@ -38,6 +38,25 @@ def prov_ok(d):
             and bool(p.get("generated_at")))
 
 
+# ------------------------------------------- store path portability (2026-10-27)
+# store.py must derive its index location from its own file location, not a
+# hardcoded VM path — otherwise the CLI/MCP throw IndexNotBuilt on any clone
+# not mounted at ~/workspace/goals/sf-property-verification-ledger (proven on
+# the Mini clone 2026-10-17).
+from sfledger import store as store_mod  # noqa: E402
+
+check("store REPO_DIR derived from file location",
+      os.path.realpath(store_mod.REPO_DIR) == os.path.realpath(REPO),
+      store_mod.REPO_DIR)
+check("store DATA5 inside this repo",
+      os.path.realpath(store_mod.DATA5)
+      == os.path.realpath(os.path.join(REPO, "sfledger", "indexes")),
+      store_mod.DATA5)
+with open(os.path.join(REPO, "sfledger", "store.py"), encoding="utf-8") as _f:
+    _store_src = _f.read()
+check("store.py has no hardcoded VM goal path",
+      "workspace/goals/sf-property-verification-ledger" not in _store_src)
+
 # ------------------------------------------------------------- known fixtures
 
 t0 = time.time()
