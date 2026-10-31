@@ -26,11 +26,23 @@ import time
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 
-BASE = os.path.expanduser("~/workspace/goals/sf-property-verification-ledger")
-REPO_DIR = os.path.join(BASE, "repo")
-W1 = os.path.join(BASE, "data/wave1")
-W2 = os.path.join(BASE, "data/wave2")
-W3 = os.path.join(BASE, "data/wave3")
+# Repo root and data directory follow the shared resolution strategy
+# (sfledger/data_dir.py): indexes live inside the repo (derived from this
+# file's location, like store.py), snapshots live outside it and resolve
+# via $SFLEDGER_DATA_DIR -> sibling data/ -> VM default. Previously both
+# were hardcoded to the VM goal root, so a build on any other clone read
+# (or failed to read) the VM's paths.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from sfledger.data_dir import data_dir_info, resolve_data_dir  # noqa: E402
+
+REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Kept for backward compatibility: the parent of the repo root (the goal
+# root on the VM layout). Do not use it to locate data or indexes.
+BASE = os.path.dirname(REPO_DIR)
+DATA_DIR = resolve_data_dir(repo_dir=REPO_DIR)
+W1 = os.path.join(DATA_DIR, "wave1")
+W2 = os.path.join(DATA_DIR, "wave2")
+W3 = os.path.join(DATA_DIR, "wave3")
 OUT = os.path.join(REPO_DIR, "sfledger", "indexes")
 
 PARCELS = os.path.join(W2, "8jwb-2stv.snapshot.jsonl")
@@ -86,8 +98,22 @@ def dump_compact(path, obj):
 
 def main():
     t0 = time.time()
+    info = data_dir_info(repo_dir=REPO_DIR)
+    missing = [p for p in (PARCELS, EAS, LINKAGE, RENTB)
+               if not os.path.exists(p)]
+    if missing:
+        print(f"error: data directory resolved to {info['data_dir']} "
+              f"(via {info['source']}, exists={info['exists']}) but "
+              "required snapshot(s) are missing:", file=sys.stderr)
+        for p in missing:
+            print(f"  missing: {p}", file=sys.stderr)
+        print("Set SFLEDGER_DATA_DIR to the directory containing "
+              "wave1/..wave4/, or place data/ next to the repo clone.",
+              file=sys.stderr)
+        sys.exit(2)
     os.makedirs(OUT, exist_ok=True)
-    manifest = {"started_at": datetime.now(timezone.utc).isoformat(), "inputs": {}}
+    manifest = {"started_at": datetime.now(timezone.utc).isoformat(), "inputs": {},
+                "data_dir": info["data_dir"], "data_dir_source": info["source"]}
     for name, path in [("parcels", PARCELS), ("eas", EAS),
                        ("linkage", LINKAGE), ("rentboard", RENTB)]:
         manifest["inputs"][name] = {"path": path, "sha256": sha256_file(path)}

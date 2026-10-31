@@ -13,11 +13,21 @@ import json
 import os
 from datetime import datetime, timezone
 
+from sfledger.data_dir import data_dir_info, require_data_dir
 from sfledger.models import (BLOCK_LEVEL_NOTE, RC_DISCLAIMER, CoverageStats,
                            to_dict)
-from sfledger.store import get_store, normalize_address, normalize_blklot
+from sfledger.store import REPO_DIR, get_store, normalize_address, normalize_blklot
 
-BASE = os.path.expanduser("~/workspace/goals/sf-property-verification-ledger")
+# Kept for backward compatibility: the parent of the repo root. On the VM
+# layout that is the goal root — identical to the previously hardcoded
+# value — but the data directory itself is resolved through
+# sfledger.data_dir (env override -> sibling data/ -> VM default), never
+# hardcoded here, and is surfaced in provenance on every result.
+BASE = os.path.dirname(REPO_DIR)
+
+
+def _data_path(*parts):
+    return os.path.join(require_data_dir(), *parts)
 
 _FRIENDLY = {"parcels": "8jwb-2stv (Parcels - Active and Retired)",
              "eas": "ramy-di5m (SF Addresses with Units)",
@@ -31,8 +41,12 @@ def _provenance(store):
         ds.append({"dataset": _FRIENDLY.get(key, key),
                    "snapshot_sha256_16": info["sha256"][:16],
                    "source_path": info["path"]})
+    info = data_dir_info()
     return {"datasets": ds,
             "generated_at": datetime.now(timezone.utc).isoformat(),
+            "data_dir": info["data_dir"],
+            "data_dir_source": info["source"],
+            "data_dir_exists": info["exists"],
             "code": "sfledger wave5"}
 
 
@@ -278,6 +292,24 @@ def _load_json(path):
         return {}
 
 
+def _load_json_required(path):
+    """Load a data file a query's numbers depend on, failing loudly.
+
+    Silently substituting {} here is what made coverage / wave-status
+    degrade to empty numbers on clones without the data directory
+    (2026-10-27 backlog item). A missing file is a hard error naming
+    the path and the SFLEDGER_DATA_DIR remediation.
+    """
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except OSError as e:
+        raise FileNotFoundError(
+            f"required ledger data file missing or unreadable: {path} "
+            f"({e}). Set SFLEDGER_DATA_DIR to the directory containing "
+            "wave1/..wave4/ if the snapshots live elsewhere.") from e
+
+
 def _tblock_gap_addresses(audit):
     """EAS address count on the zero-parcel T-block (the 0253T coverage gap).
 
@@ -297,7 +329,7 @@ def _tblock_gap_addresses(audit):
 
 def coverage_report():
     store = get_store()
-    audit = _load_json(os.path.join(BASE, "data/wave4/audit.json"))
+    audit = _load_json_required(_data_path("wave4", "audit.json"))
     parcels_total = len(store.parcels)
     active = sum(1 for p in store.parcels.values() if p.active)
     active_with = sum(1 for b, p in store.parcels.items()
@@ -331,8 +363,8 @@ def coverage_report():
         tblock_0253t_gap_addresses=_tblock_gap_addresses(audit),
         independent_sample_agreement=indep.get("agreement_rate"),
         addrmap_conflict_rate=conflicts.get("conflict_rate"),
-        negative_controls_passed=_load_json(
-            os.path.join(BASE, "data/wave3/stats.json")).get("negative_controls", {}).get("passed"),
+        negative_controls_passed=_load_json_required(
+            _data_path("wave3", "stats.json")).get("negative_controls", {}).get("passed"),
     )
     return {
         "parcels": {
@@ -374,8 +406,11 @@ def coverage_report():
 # ----------------------------------------------------------------- wave status
 
 def wave_status():
+    # Fail loudly (not empty waves) when no data directory resolves at all.
+    require_data_dir()
+
     def man(path):
-        return _load_json(path)
+        return _load_json_required(path)
 
     def ds_entry(m, title):
         pages = m.get("pages", [])
@@ -393,7 +428,7 @@ def wave_status():
             "completed_at": m.get("completed_at"),
         }
 
-    w1 = man(os.path.join(BASE, "data/wave1/gdc7-dmcn.manifest.json"))
+    w1 = man(_data_path("wave1", "gdc7-dmcn.manifest.json"))
     w1e = ds_entry(w1, "Rent Board Housing Inventory")
     w1_note = ("2026-09-29 harvest: live row count grew +114 mid-harvest "
                "(551,244 -> 551,358); reconciled through the harvester resume "
@@ -414,16 +449,16 @@ def wave_status():
                         ("ramy-di5m", "SF Addresses with Units"),
                         ("5mjj-njit", "Addresses with Parcel Number")]:
         w2sets.append(ds_entry(
-            man(os.path.join(BASE, f"data/wave2/{dsid}.manifest.json")), title))
+            man(_data_path("wave2", f"{dsid}.manifest.json")), title))
     waves.append({
         "wave": 2, "title": "Parcel + address harvest",
         "datasets": w2sets,
         "status": "complete" if all(d["completed_at"] for d in
-                                    [man(os.path.join(BASE, f"data/wave2/{d}.manifest.json"))
+                                    [man(_data_path("wave2", f"{d}.manifest.json"))
                                      for d in ("8jwb-2stv", "ramy-di5m", "5mjj-njit")])
         else "incomplete",
     })
-    w3stats = man(os.path.join(BASE, "data/wave3/stats.json"))
+    w3stats = man(_data_path("wave3", "stats.json"))
     waves.append({
         "wave": 3, "title": "Record linkage parcel<->address",
         "linkage_rows": w3stats.get("eas", {}).get("rows"),
@@ -433,7 +468,7 @@ def wave_status():
         "completed_at": w3stats.get("finished_at"),
         "status": "complete",
     })
-    audit = man(os.path.join(BASE, "data/wave4/audit.json"))
+    audit = man(_data_path("wave4", "audit.json"))
     waves.append({
         "wave": 4, "title": "Coverage audit + independent verification",
         "independent_sample_agreement": audit.get("independent_sample", {}).get("agreement_rate"),
@@ -442,7 +477,9 @@ def wave_status():
         "completed_at": audit.get("finished_at"),
         "status": "complete",
     })
-    bman = man(os.path.join(BASE, "repo/sfledger/indexes/manifest.json"))
+    # The index manifest lives inside the repo (not the data dir); a missing
+    # one legitimately means "not built yet", so it stays tolerant.
+    bman = _load_json(os.path.join(REPO_DIR, "sfledger", "indexes", "manifest.json"))
     waves.append({
         "wave": 5, "title": "Typed service layer + CLI + MCP",
         "derived_indexes": ["parcels.idx.json", "eas.idx.json", "blocks.idx.json"],

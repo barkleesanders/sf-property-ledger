@@ -57,6 +57,41 @@ with open(os.path.join(REPO, "sfledger", "store.py"), encoding="utf-8") as _f:
 check("store.py has no hardcoded VM goal path",
       "workspace/goals/sf-property-verification-ledger" not in _store_src)
 
+# --------------------------------- data-dir resolution (2026-10-31)
+# queries.py / build_indexes.py must resolve the out-of-repo data directory
+# through sfledger.data_dir (env -> sibling data/ -> VM default), never a
+# hardcoded VM path, and surface the choice in provenance — on a clone
+# without data, coverage/wave-status used to silently degrade to empty.
+from sfledger import build_indexes as build_mod  # noqa: E402
+from sfledger import data_dir as data_dir_mod  # noqa: E402
+
+for _mod_name in ("queries.py", "build_indexes.py"):
+    with open(os.path.join(REPO, "sfledger", _mod_name), encoding="utf-8") as _f:
+        check(f"{_mod_name} has no hardcoded VM goal path",
+              "workspace/goals/sf-property-verification-ledger" not in _f.read())
+_dd = data_dir_mod.data_dir_info()
+check("data_dir resolves to an existing directory on this layout",
+      _dd["exists"] and os.path.isdir(_dd["data_dir"]), str(_dd))
+check("build_indexes data paths derive from resolved data_dir",
+      build_mod.DATA_DIR == _dd["data_dir"]
+      and build_mod.PARCELS == os.path.join(_dd["data_dir"], "wave2",
+                                            "8jwb-2stv.snapshot.jsonl")
+      and os.path.realpath(build_mod.REPO_DIR) == os.path.realpath(REPO),
+      build_mod.DATA_DIR)
+_env_info = data_dir_mod.data_dir_info(
+    environ={"SFLEDGER_DATA_DIR": "/tmp/sfledger-no-such-data"})
+check("data_dir env override wins and surfaces missing dir",
+      _env_info["source"] == "env:SFLEDGER_DATA_DIR"
+      and _env_info["data_dir"] == "/tmp/sfledger-no-such-data"
+      and _env_info["exists"] is False, str(_env_info))
+try:
+    data_dir_mod.require_data_dir(
+        environ={"SFLEDGER_DATA_DIR": "/tmp/sfledger-no-such-data"})
+    _raised = False
+except data_dir_mod.DataDirNotFound:
+    _raised = True
+check("require_data_dir fails loudly on missing dir", _raised)
+
 # ------------------------------------------------------------- known fixtures
 
 t0 = time.time()
@@ -68,6 +103,11 @@ blklots = {m["parcel"]["blklot"] for m in r["matches"] if m["parcel"]}
 check("address t-block parcels", all(b.startswith("0792T") for b in blklots),
       f"{len(blklots)} blklots")
 check("address provenance", prov_ok(r))
+check("provenance surfaces resolved data_dir",
+      r["provenance"].get("data_dir") == _dd["data_dir"]
+      and r["provenance"].get("data_dir_exists") is True
+      and bool(r["provenance"].get("data_dir_source")),
+      str(r["provenance"].get("data_dir")))
 
 r = queries.lookup_parcel("0189001A")
 p = r["parcel"]
