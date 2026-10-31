@@ -7,6 +7,7 @@ disagreement — preserve it as a recorded conflict instead.
 ## Open
 
 - [ ] **link/link_wave3.py and audit/audit_wave4.py still hardcode the VM goal root for data/ (2026-10-31)**: the wave scripts were explicitly lower priority in the 2026-10-27 item closed 2026-10-31 below. They can now reuse `sfledger/data_dir.py` (`resolve_data_dir` / `require_data_dir`) the same way queries.py and build_indexes.py do — a small follow-up, only worth doing if those wave scripts are re-run from a non-VM clone.
+- [ ] **Dependabot high alert #3: undici in web/package-lock.json (2026-10-31)**: undici >=7.18.0, <7.30.1 vulnerable to DoS via unhandled error on excessive content-encodings; patched in 7.30.1. Surfaced by GitHub on the 2026-10-31 push of ac5bf04 and verified via the Dependabot API the same run. Transitive dev-side dependency (wrangler/miniflare chain, like the 2026-10-17 sharp alert) — fix by bumping the parent or an override, verifying build:data determinism + parity before merging, per the sharp precedent.
 
 
 
