@@ -92,6 +92,45 @@ except data_dir_mod.DataDirNotFound:
     _raised = True
 check("require_data_dir fails loudly on missing dir", _raised)
 
+# --------------------------------- wave3/wave4 data-dir resolution (2026-11-03)
+# link/link_wave3.py and audit/audit_wave4.py must resolve their snapshot
+# inputs/outputs through the same sfledger.data_dir resolver instead of a
+# hardcoded VM goal root — the follow-up logged 2026-10-31.
+import importlib.util as _ilu  # noqa: E402
+
+
+def _load_wave_script(rel_path, mod_name):
+    _spec = _ilu.spec_from_file_location(mod_name, os.path.join(REPO, rel_path))
+    _mod = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    return _mod
+
+
+for _wave_rel in ("link/link_wave3.py", "audit/audit_wave4.py"):
+    with open(os.path.join(REPO, _wave_rel), encoding="utf-8") as _f:
+        check(f"{_wave_rel} has no hardcoded VM goal path",
+              "workspace/goals/sf-property-verification-ledger" not in _f.read())
+_link_mod = _load_wave_script("link/link_wave3.py", "link_wave3_under_test")
+check("link_wave3 data paths derive from resolved data_dir",
+      _link_mod.DATA_DIR == _dd["data_dir"]
+      and _link_mod.PARCELS == os.path.join(_dd["data_dir"], "wave2",
+                                            "8jwb-2stv.snapshot.jsonl")
+      and _link_mod.RENTB == os.path.join(_dd["data_dir"], "wave1",
+                                          "gdc7-dmcn.snapshot.jsonl")
+      and _link_mod.OUT == os.path.join(_dd["data_dir"], "wave3")
+      and os.path.realpath(_link_mod.REPO_DIR) == os.path.realpath(REPO),
+      _link_mod.DATA_DIR)
+_audit_mod = _load_wave_script("audit/audit_wave4.py", "audit_wave4_under_test")
+check("audit_wave4 data paths derive from resolved data_dir",
+      _audit_mod.DATA_DIR == _dd["data_dir"]
+      and _audit_mod.PARCELS == os.path.join(_dd["data_dir"], "wave2",
+                                             "8jwb-2stv.snapshot.jsonl")
+      and _audit_mod.LINK == os.path.join(_dd["data_dir"], "wave3",
+                                          "linkage.jsonl")
+      and _audit_mod.OUT == os.path.join(_dd["data_dir"], "wave4")
+      and os.path.realpath(_audit_mod.REPO_DIR) == os.path.realpath(REPO),
+      _audit_mod.DATA_DIR)
+
 # ------------------------------------------------------------- known fixtures
 
 t0 = time.time()

@@ -33,10 +33,22 @@ import sys
 import time
 from datetime import datetime, timezone
 
-BASE = os.path.expanduser("~/workspace/goals/sf-property-verification-ledger")
-W1 = os.path.join(BASE, "data/wave1")
-W2 = os.path.join(BASE, "data/wave2")
-OUT = os.path.join(BASE, "data/wave3")
+# Repo root and data directory follow the shared resolution strategy
+# (sfledger/data_dir.py): snapshots live outside the repo and resolve via
+# $SFLEDGER_DATA_DIR -> sibling data/ -> VM default. Previously BASE was
+# hardcoded to the VM goal root, so this script could only run from that
+# exact layout.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from sfledger.data_dir import resolve_data_dir  # noqa: E402
+
+REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Kept for backward compatibility: the parent of the repo root (the goal
+# root on the VM layout). Do not use it to locate data.
+BASE = os.path.dirname(REPO_DIR)
+DATA_DIR = resolve_data_dir(repo_dir=REPO_DIR)
+W1 = os.path.join(DATA_DIR, "wave1")
+W2 = os.path.join(DATA_DIR, "wave2")
+OUT = os.path.join(DATA_DIR, "wave3")
 
 PARCELS = os.path.join(W2, "8jwb-2stv.snapshot.jsonl")
 EAS = os.path.join(W2, "ramy-di5m.snapshot.jsonl")
