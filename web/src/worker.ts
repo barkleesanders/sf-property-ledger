@@ -13,6 +13,7 @@ import { WorkerDataAdapter } from "./worker-adapter.js";
 import type { BundleJson } from "./data-engine.js";
 import type { FaqAi, FaqRateLimiter } from "./faq/faq-route.js";
 import bundleData from "./data/bundle.json" with { type: "json" };
+import { emitWideEvent } from "./wide-event.js";
 
 /** Minimal R2 bucket surface the Worker needs (avoids a workers-types dep). */
 interface R2BucketLike {
@@ -42,13 +43,27 @@ function getApp(env: Env) {
   return cachedApp;
 }
 
-export default {
+const handler = {
   async fetch(request: Request, env: Env): Promise<Response> {
     try {
       return await getApp(env).fetch(request, env);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       return new Response(`ledger worker error: ${msg}`, { status: 500 });
+    }
+  },
+};
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const start = Date.now();
+    try {
+      const res = await handler.fetch(request, env);
+      emitWideEvent(request, res.status, start);
+      return res;
+    } catch (err) {
+      emitWideEvent(request, 500, start, err instanceof Error ? err.name : "UnknownError");
+      throw err;
     }
   },
 };
