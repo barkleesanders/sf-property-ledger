@@ -47,3 +47,14 @@ simple = { limit = 600, period = 60 }
 
 [observability]
 enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+persist = true
+head_sampling_rate = 1
+
+[observability.traces]
+enabled = true
+persist = true
+head_sampling_rate = 1
