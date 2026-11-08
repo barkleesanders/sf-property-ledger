@@ -33,6 +33,9 @@ PARCEL_FIELDS = ["blklot", "block_num", "lot_num", "active", "street_name",
                  "zoning_district", "analysis_neighborhood", "lat", "lon"]
 EAS_FIELDS = ["eas_fullid", "eas_baseid", "address", "parcel_number", "block",
               "lot", "tier", "blklot", "parcel_active", "lat", "lon", "is_unit"]
+FILING_FIELDS = ["block_num", "submission_year", "case_type_name",
+                 "occupancy_type", "monthly_rent", "bedroom_count",
+                 "year_property_built", "block_address"]
 
 
 class IndexNotBuilt(Exception):
@@ -143,6 +146,19 @@ class LedgerStore:
                 parcel_count=bd["parcel_count"],
                 neighborhoods=bd["neighborhoods"])
 
+        # Rent Board filings by canonical unique_id. Optional: indexes
+        # built before filings.idx.json existed simply have no filing
+        # lookup (find_filing returns None); rebuild to enable it.
+        self.filings = {}            # unique_id (str) -> filing dict
+        fpath = os.path.join(DATA5, "filings.idx.json")
+        if os.path.exists(fpath):
+            with open(fpath, encoding="utf-8") as f:
+                for uid, row in json.load(f).items():
+                    d = dict(zip(FILING_FIELDS, row))
+                    d["unique_id"] = uid
+                    self.filings[uid] = d
+        self.filings_index_loaded = bool(self.filings)
+
         try:
             with open(os.path.join(DATA5, "manifest.json"),
                       encoding="utf-8") as f:
@@ -213,6 +229,18 @@ class LedgerStore:
 
     def block_evidence(self, block_num):
         return self.blocks.get((block_num or "").strip().upper())
+
+    def find_filing(self, unique_id):
+        """Look up one Rent Board filing by its canonical unique_id.
+
+        Returns the filing dict (fields per FILING_FIELDS, plus
+        "unique_id") or None. The filing's block_num is block-level
+        evidence — never a parcel attribution. Returns None for every
+        id when the loaded indexes predate filings.idx.json.
+        """
+        if unique_id is None:
+            return None
+        return self.filings.get(str(unique_id))
 
 
 _store = None

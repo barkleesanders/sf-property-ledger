@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Wave 5 service layer: the 7 query functions shared by the CLI and MCP server.
+"""Wave 5 service layer: the 8 query functions shared by the CLI and MCP server.
 
 Every function returns a JSON-serializable dict (deterministic key order).
 Hard rules enforced here, once, for both surfaces:
@@ -227,6 +227,38 @@ def rent_control_evidence(query):
         "block": block,
         "provenance": _provenance(store),
     }
+
+
+# ---------------------------------------------------------------- one filing
+
+def filing_by_id(unique_id):
+    """Retrieve a single Rent Board filing by its canonical unique_id.
+
+    The filing layer's citable unit: the same record the block aggregates
+    and samples are drawn from, addressable by the source system's own
+    ID (dataset gdc7-dmcn). Block-level evidence rules still apply — the
+    filing's block_num scopes it to a block, never to a parcel/address.
+    """
+    store = get_store()
+    result = {"query_unique_id": None if unique_id is None else str(unique_id),
+              "disclaimer": RC_DISCLAIMER,
+              "provenance": _provenance(store)}
+    filing = store.find_filing(unique_id)
+    if filing is None:
+        result["found"] = False
+        if not store.filings_index_loaded:
+            result["note"] = ("filings index not built: rebuild the Wave 5 "
+                              "indexes with sfledger/build_indexes.py to "
+                              "enable unique_id lookup")
+        return result
+    result.update({
+        "found": True,
+        "tier": "reported",  # contract: filing exists, not proof of legal status
+        "scope": "block-level filing evidence only",
+        "note": BLOCK_LEVEL_NOTE,
+        "filing": filing,
+    })
+    return result
 
 
 # ---------------------------------------------------------------- filing gaps

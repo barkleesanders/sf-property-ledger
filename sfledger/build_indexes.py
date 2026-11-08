@@ -13,6 +13,9 @@ Outputs (read-only w.r.t. existing data — these are NEW derived files):
                                  block, lot, tier, blklot, parcel_active,
                                  lat, lon, is_unit]
   repo/sfledger/indexes/blocks.idx.json    {block_num: {filing aggregates + EAS/parcel counts}}
+  repo/sfledger/indexes/filings.idx.json   {unique_id: [block_num, submission_year,
+                                 case_type_name, occupancy_type, monthly_rent,
+                                 bedroom_count, year_property_built, block_address]}
   repo/sfledger/indexes/manifest.json      input sha256s, row counts, timings
 
 stdlib only. Run: python3 repo/sfledger/build_indexes.py
@@ -55,6 +58,55 @@ PARCEL_FIELDS = ["blklot", "block_num", "lot_num", "active", "street_name",
                  "zoning_district", "analysis_neighborhood", "lat", "lon"]
 EAS_FIELDS = ["eas_fullid", "eas_baseid", "address", "parcel_number", "block",
               "lot", "tier", "blklot", "parcel_active", "lat", "lon", "is_unit"]
+FILING_FIELDS = ["block_num", "submission_year", "case_type_name",
+                 "occupancy_type", "monthly_rent", "bedroom_count",
+                 "year_property_built", "block_address"]
+
+# Per-block sample size. The sample is NOT the first N filings in stream
+# order (an accident of Socrata page order at harvest time): it is the N
+# filings with the smallest canonical unique_id, so the same snapshot
+# always exhibits the same samples regardless of harvest order.
+SAMPLE_N = 3
+SAMPLE_RULE = f"{SAMPLE_N} filings with the smallest unique_id per block"
+
+
+def filing_id_key(uid):
+    """Canonical ordering key for a Rent Board unique_id.
+
+    Numeric ids order numerically; non-numeric ids order after them,
+    lexicographically; a missing id orders last (and is never
+    sample-eligible while identified filings exist for the block).
+    """
+    if uid is None:
+        return (2, 0, "")
+    s = str(uid)
+    try:
+        return (0, int(s), "")
+    except ValueError:
+        return (1, 0, s)
+
+
+def _sample_record(d):
+    return {
+        "unique_id": d.get("unique_id"),
+        "submission_year": d.get("submission_year"),
+        "occupancy_type": d.get("occupancy_type"),
+        "monthly_rent": d.get("monthly_rent"),
+        "bedroom_count": d.get("bedroom_count"),
+        "year_property_built": d.get("year_property_built"),
+        "block_address": d.get("block_address"),
+    }
+
+
+def _offer_sample(cands, rec):
+    """Keep the SAMPLE_N records with the smallest filing_id_key."""
+    if len(cands) < SAMPLE_N:
+        cands.append(rec)
+        return
+    worst = max(range(len(cands)),
+                key=lambda i: filing_id_key(cands[i]["unique_id"]))
+    if filing_id_key(rec["unique_id"]) < filing_id_key(cands[worst]["unique_id"]):
+        cands[worst] = rec
 
 
 def norm(v):
@@ -198,13 +250,39 @@ def main():
     print(f"  eas.idx.json: {n} rows (linkage misses: {missed})", flush=True)
     del eas_rows, link
 
-    # ---- Pass 4: Rent Board per-block filing aggregates ----
+    # ---- Pass 4: Rent Board per-block filing aggregates + filing index ----
     blocks = {}
-    n = 0
+    filings = {}               # unique_id (str) -> positional FILING_FIELDS row
+    n = n_no_id = n_dup_id = n_no_block = 0
     for d in stream(RENTB):
         n += 1
         b = norm(d.get("block_num"))
+        uid = d.get("unique_id")
+        # Every identified filing stays addressable by its canonical
+        # unique_id in filings.idx.json — including filings whose block
+        # is missing (they still count in the manifest stats below).
+        # First occurrence wins; later duplicates are counted, not kept.
+        sample_eligible = False
+        if uid is None:
+            n_no_id += 1
+        else:
+            key = str(uid)
+            if key in filings:
+                n_dup_id += 1
+            else:
+                filings[key] = [b, d.get("submission_year"),
+                                d.get("case_type_name"),
+                                d.get("occupancy_type"),
+                                d.get("monthly_rent"),
+                                d.get("bedroom_count"),
+                                d.get("year_property_built"),
+                                d.get("block_address")]
+                # Only the index-winning (first) occurrence of an id may
+                # be sampled — a duplicate row is the same filing, not a
+                # second sample.
+                sample_eligible = True
         if not b:
+            n_no_block += 1
             continue
         e = blocks.get(b)
         if e is None:
@@ -213,7 +291,8 @@ def main():
                              "rent": Counter(), "bed": Counter(),
                              "yb_min": None, "yb_max": None,
                              "yb_pre1979": 0, "yb_post1979": 0,
-                             "yb_unknown": 0, "samples": []}
+                             "yb_unknown": 0, "sample_cands": [],
+                             "sample_unid": []}
         e["filing_count"] += 1
         if d.get("submission_year"):
             e["years"].add(str(d["submission_year"]))
@@ -235,19 +314,28 @@ def main():
                 e["yb_post1979"] += 1
         else:
             e["yb_unknown"] += 1
-        if len(e["samples"]) < 3:
-            e["samples"].append({
-                "unique_id": d.get("unique_id"),
-                "submission_year": d.get("submission_year"),
-                "occupancy_type": d.get("occupancy_type"),
-                "monthly_rent": d.get("monthly_rent"),
-                "bedroom_count": d.get("bedroom_count"),
-                "year_property_built": d.get("year_property_built"),
-                "block_address": d.get("block_address"),
-            })
+        if uid is None:
+            # Unidentified filings fill sample slots only when the block
+            # has fewer than SAMPLE_N identified filings (stream order).
+            if len(e["sample_unid"]) < SAMPLE_N:
+                e["sample_unid"].append(_sample_record(d))
+        elif sample_eligible:
+            _offer_sample(e["sample_cands"], _sample_record(d))
         if n % 100000 == 0:
             print(f"  rentboard: {n}", flush=True)
     print(f"  rentboard blocks: {len(blocks)}", flush=True)
+    dump_compact(os.path.join(OUT, "filings.idx.json"), filings)
+    print(f"  filings.idx.json: {len(filings)} filings by unique_id "
+          f"({n_no_id} without unique_id, {n_dup_id} duplicate ids, "
+          f"{n_no_block} without block_num)", flush=True)
+    manifest["rentboard"] = {
+        "rows": n, "filings_indexed": len(filings),
+        "filings_without_unique_id": n_no_id,
+        "duplicate_unique_ids": n_dup_id,
+        "filings_without_block": n_no_block,
+        "sample_rule": SAMPLE_RULE,
+    }
+    del filings
 
     # ---- Pass 5: combine block index ----
     block_idx = {}
@@ -255,7 +343,8 @@ def main():
         e = blocks.get(b, {"filing_count": 0, "years": set(), "case_types": set(),
                            "occ": Counter(), "rent": Counter(), "bed": Counter(),
                            "yb_min": None, "yb_max": None, "yb_pre1979": 0,
-                           "yb_post1979": 0, "yb_unknown": 0, "samples": []})
+                           "yb_post1979": 0, "yb_unknown": 0, "sample_cands": [],
+                           "sample_unid": []})
         block_idx[b] = {
             "filing_count": e["filing_count"],
             "submission_years": sorted(e["years"]),
@@ -268,7 +357,13 @@ def main():
             "year_built_pre1979": e["yb_pre1979"],
             "year_built_post1979": e["yb_post1979"],
             "year_built_unknown": e["yb_unknown"],
-            "sample_filings": e["samples"],
+            # Deterministic sample: the SAMPLE_N smallest unique_ids
+            # (see SAMPLE_RULE), filled with unidentified filings in
+            # stream order only when the block has fewer identified ones.
+            "sample_filings": (
+                sorted(e["sample_cands"],
+                       key=lambda r: filing_id_key(r["unique_id"]))
+                + e["sample_unid"])[:SAMPLE_N],
             "address_count": block_addr.get(b, 0),
             "unit_count": block_unit.get(b, 0),
             "parcel_count": len(block_parcels.get(b, ())),
