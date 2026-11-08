@@ -34,6 +34,9 @@ def main(argv=None):
     p = sub.add_parser("rc", help="rent-control filing evidence for address or parcel")
     p.add_argument("query", help="address or blklot")
 
+    p = sub.add_parser("filing", help="look up one Rent Board filing by unique_id")
+    p.add_argument("unique_id", help="Rent Board unique_id from dataset gdc7-dmcn")
+
     p = sub.add_parser("gaps", help="blocks with zero inventory filings, ranked")
     p.add_argument("--neighborhood", default=None,
                    help="filter by analysis neighborhood (substring match)")
@@ -52,6 +55,8 @@ def main(argv=None):
             emit(queries.lookup_parcel(args.blklot))
         elif args.cmd == "rc":
             emit(queries.rent_control_evidence(args.query))
+        elif args.cmd == "filing":
+            emit(queries.filing_by_id(args.unique_id))
         elif args.cmd == "gaps":
             emit(queries.filing_gap(neighborhood=args.neighborhood,
                                     limit=args.limit))

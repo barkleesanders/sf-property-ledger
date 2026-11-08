@@ -40,6 +40,16 @@ TOOLS = [
                      "properties": {"query": {"type": "string",
                                              "description": "SF address or blklot"}},
                      "required": ["query"]}},
+    {"name": "filing_by_id",
+     "description": "Look up a single Rent Board inventory filing by its "
+                    "canonical unique_id (dataset gdc7-dmcn). Returns the "
+                    "filing's block, year, case type, occupancy, rent, "
+                    "bedrooms, year built, and block address. Block-level "
+                    "evidence only — not a legal rent-control determination.",
+     "inputSchema": {"type": "object",
+                     "properties": {"unique_id": {"type": "string",
+                                                  "description": "Rent Board unique_id, e.g. '1234567'"}},
+                     "required": ["unique_id"]}},
     {"name": "filing_gap",
      "description": "Blocks with zero Rent Board inventory filings, ranked by "
                     "unit density (apartment-stock proxy). Optional neighborhood filter.",
@@ -73,6 +83,8 @@ def _dispatch(name, args):
         return queries.lookup_parcel(args["blklot"])
     if name == "rent_control_evidence":
         return queries.rent_control_evidence(args["query"])
+    if name == "filing_by_id":
+        return queries.filing_by_id(args["unique_id"])
     if name == "filing_gap":
         return queries.filing_gap(neighborhood=args.get("neighborhood"),
                                   limit=args.get("limit", 20))

@@ -5,6 +5,7 @@ This is the official way to run the Python test suites:
 
     python3 tests/run_tests.py            # all suites
     python3 tests/run_tests.py wave5      # only the Wave 5 suite
+    python3 tests/run_tests.py filingids  # only the filing-ID suite
     python3 tests/run_tests.py supervisor # only the supervisor shell test
 
 Why not pytest? Decided 2026-10-13 (see tests/README.md and
@@ -37,6 +38,7 @@ REPO = Path(__file__).resolve().parent.parent
 
 SUITES = {
     "wave5": [sys.executable, str(REPO / "tests" / "test_wave5.py")],
+    "filingids": [sys.executable, str(REPO / "tests" / "test_filing_ids.py")],
     "supervisor": ["bash", str(REPO / "harvest" / "tests" / "test_supervisor_logdir.sh")],
 }
 

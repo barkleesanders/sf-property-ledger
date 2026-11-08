@@ -283,6 +283,13 @@ for cmd in CMDS:
 # ------------------------------------------------------------- MCP: list+call
 
 t0 = time.time()
+# A real filing unique_id from the built indexes, for the filing_by_id call.
+with open(os.path.join(REPO, "sfledger", "indexes", "blocks.idx.json"),
+          encoding="utf-8") as _bf:
+    _blocks_idx = json.load(_bf)
+_SOME_UID = str(next(bd["sample_filings"][0]["unique_id"]
+                     for bd in _blocks_idx.values() if bd["sample_filings"]))
+del _blocks_idx
 frames = [
     {"jsonrpc": "2.0", "id": 1, "method": "initialize",
      "params": {"protocolVersion": "2024-11-05", "capabilities": {},
@@ -292,6 +299,9 @@ frames = [
     {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
      "params": {"name": "rent_control_evidence",
                 "arguments": {"query": "0189001A"}}},
+    {"jsonrpc": "2.0", "id": 4, "method": "tools/call",
+     "params": {"name": "filing_by_id",
+                "arguments": {"unique_id": _SOME_UID}}},
 ]
 inp = "".join(json.dumps(f) + "\n" for f in frames)
 pr = subprocess.run([sys.executable, os.path.join(REPO, "mcp", "server.py")],
@@ -305,10 +315,15 @@ for line in pr.stdout.splitlines():
     if "id" in m and "result" in m:
         outs[m["id"]] = m["result"]
 tools = [t["name"] for t in outs.get(2, {}).get("tools", [])]
-check("mcp tools/list 7 tools", len(tools) == 7, str(tools))
+check("mcp tools/list 8 tools", len(tools) == 8 and "filing_by_id" in tools,
+      str(tools))
 d = json.loads(outs[3]["content"][0]["text"])
 check("mcp rc call", d["found"] and d["disclaimer"] == RC_DISCLAIMER
       and d["block"]["scope"] == "block-level filing evidence only")
+d = json.loads(outs[4]["content"][0]["text"])
+check("mcp filing_by_id call", d["found"] and d["disclaimer"] == RC_DISCLAIMER
+      and d["filing"]["unique_id"] == _SOME_UID
+      and d["scope"] == "block-level filing evidence only")
 print(f"mcp test took {time.time() - t0:.0f}s")
 
 # ------------------------------------------------------------- read-only data
